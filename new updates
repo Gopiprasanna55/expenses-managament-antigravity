@@ -1,0 +1,350 @@
+Certainly! Here’s a polished, perfectly formatted prompt you can directly pass to an AI code assistant or tool for precise implementation:
+
+---
+
+**Task:** Improve dashboard layout — fix navbar alignment, remove logout button, implement collapsible sidebar with hamburger, and add tooltips on collapsed sidebar.
+
+---
+
+### Requirements:
+
+1. **Navbar Alignment:**
+
+* Vertically center all navbar elements (hamburger, date, profile).
+* Date should be aligned near the right side, but left of the profile.
+* Profile section aligned at the far right end.
+* Use flexbox (`display: flex; align-items: center; justify-content: space-between;`).
+* Fixed navbar height (e.g., 64px).
+* Ensure consistent horizontal padding and spacing.
+
+2. **Sidebar Cleanup:**
+
+* Remove the **Logout** button completely from the sidebar.
+* Adjust sidebar spacing to avoid empty gaps after removal.
+
+3. **Hamburger Menu Behavior:**
+
+* Sidebar toggles between expanded and collapsed states on hamburger click.
+* **Expanded:** Sidebar width ~250px, icons + labels visible.
+* **Collapsed:** Sidebar width ~80px, only icons visible, labels hidden.
+* Smooth CSS transition on width and content visibility (~300ms).
+* Hamburger stays in navbar and toggles sidebar state.
+
+4. **Popover Tooltips:**
+
+* When sidebar is collapsed, hovering over sidebar icons shows a tooltip with the full label.
+* Tooltip style: dark background, white text, subtle padding, border-radius.
+* Tooltip positioned to the right of the icon.
+* Tooltips only appear in collapsed state.
+
+5. **General:**
+
+* Use clean, reusable CSS classes and avoid inline styles.
+* Ensure responsiveness and no layout breakage.
+* Maintain smooth animations and consistent spacing.
+* Implement proper state management for toggling sidebar.
+* Do not alter other UI components or data.
+
+---
+
+### Deliverables:
+
+* Updated Navbar component with proper alignment.
+* Sidebar component with logout button removed.
+* Hamburger toggle functionality with collapse/expand sidebar.
+* Tooltip/popover for collapsed sidebar icons.
+* Smooth transitions and responsive design.
+
+
+
+Please implement this with clean, maintainable code suitable for production.
+
+
+
+
+
+### Fix Add Expense Form UI and UX Issues
+
+**Current problems:**
+
+1. The form looks too big and takes excessive horizontal space.
+2. Receipt upload area is not functional or not clear (unable to upload receipt).
+3. The **Category** dropdown is missing the dropdown arrow/icon, so users don’t realize it’s a dropdown.
+
+---
+
+### Required improvements:
+
+1. **Form size and layout:**
+
+* Limit the form width to a reasonable max width (e.g., max-width: 600px or 700px).
+* Center the form horizontally on the page with some margin on sides.
+* Use consistent spacing and padding inside form controls.
+* Make input fields and buttons properly sized for better visual balance.
+
+2. **Receipt Upload:**
+
+* Fix or enable the receipt upload functionality.
+* Make sure the entire upload box is clickable and clearly indicates file upload.
+* Add a visible file input button or icon inside the upload area.
+* Support PNG, JPG, PDF files up to 10MB.
+* Show feedback when a file is selected (filename or thumbnail preview).
+
+3. **Category Dropdown:**
+
+* Add a visible dropdown arrow/icon next to the category field.
+* Make sure the category field is a proper select or autocomplete component.
+* The dropdown icon should be consistent with design style and clickable to open options.
+* Provide hover and focus states for better user guidance.
+
+4. **General:**
+
+* Maintain responsive design for smaller screens.
+* Ensure all form fields have proper labels and placeholders.
+* Keep form accessible and user-friendly.
+
+---
+
+Please implement these UI and UX fixes with clean, maintainable code.
+
+
+
+
+I want to modify the **Expense Wallet → Quick Activity** section with the following changes:
+
+### 1️⃣ Show Only Recharge Transactions
+
+* In the **Quick Activity** panel, display **only transactions where type = "Recharge"**.
+* Do NOT show:
+
+  * Expense
+  * Transfer
+  * Any other transaction types
+* The list should be filtered at backend/API level (not just UI hidden).
+
+Example condition:
+
+```
+transaction.type === "recharge"
+```
+
+---
+
+### 2️⃣ Add Action Options for Each Recharge Entry
+
+For every recharge record in Quick Activity, add an **Actions column or dropdown menu (⋮)** with the following options:
+
+#### ✏️ Edit Recharge
+
+* Allow admin to edit:
+
+  * Recharge amount
+  * Date
+  * Notes (if available)
+* When edited:
+
+  * Wallet balance must automatically recalculate
+  * Update total balance correctly
+  * Maintain transaction history log
+
+#### 👁 View Recharge
+
+* Open modal or detail page showing:
+
+  * Recharge ID
+  * Amount
+  * Date
+  * Created by
+  * Payment method
+  * Notes
+  * Created at / Updated at
+
+#### 🗑 Delete Recharge
+
+* Show confirmation dialog:
+
+  > "Are you sure you want to delete this recharge?"
+* On delete:
+
+  * Deduct that recharge amount from wallet balance
+  * Recalculate total balance
+  * Remove from transaction history
+  * Prevent deletion if it causes negative wallet balance (optional validation)
+
+---
+
+### 3️⃣ UI Requirements
+
+* Add 3-dot menu (⋮) or action buttons on the right side of each recharge row
+* Maintain consistent UI styling
+* Show success toast messages:
+
+  * "Recharge updated successfully"
+  * "Recharge deleted successfully"
+
+---
+
+### 4️⃣ Backend Logic Requirements
+
+* Ensure wallet balance is always calculated as:
+
+```
+Total Recharge - Total Expense = Wallet Balance
+```
+
+* Editing or deleting recharge must trigger balance recalculation
+* Add proper validation and error handling
+
+---
+
+### 5️⃣ Permissions
+
+* Only Admin users can:
+
+  * Edit recharge
+  * Delete recharge
+* Normal users can only View recharge
+
+
+Here is your prompt rewritten in a clean, professional, and structured format suitable for an AI development tool:
+
+---
+
+
+
+
+
+
+
+### 1. Profile Dropdown Simplification
+
+Update the **Profile Dropdown (Top Right – Admin Account section)** with the following requirements:
+
+#### Requirements:
+
+* The dropdown must display only:
+
+  * User Full Name
+  * User Email Address
+  * Logout Button
+* Remove the following items:
+
+  * “Manage Account”
+  * “User Account” label
+  * Any additional or unnecessary menu options
+
+#### Expected Layout Structure:
+
+* **Full Name**
+* [user@email.com](mailto:user@email.com)
+* Logout (button)
+
+#### Functional Expectations:
+
+* The Logout button must trigger the existing logout functionality.
+* Maintain proper alignment and spacing.
+* Ensure responsive design compatibility.
+* Keep styling consistent with the overall UI theme.
+* No additional text or elements should appear in the dropdown.
+
+---
+
+### 2. Sidebar Toggle Behavior Fix
+
+There is an issue with the sidebar toggle functionality on the Dashboard.
+
+#### Current Problem:
+
+When clicking the menu icon (☰), the sidebar opens and closes immediately (double toggle behavior). This is incorrect.
+
+#### Expected Behavior:
+
+* Sidebar should toggle only once per click.
+* No flickering or automatic reopening/closing.
+* Smooth and stable open/close transition.
+* Proper state handling without redundant re-renders.
+
+#### Technical Requirements:
+
+* Remove any duplicate click event handlers.
+* Ensure state is updated only once per action.
+* Prevent unintended re-triggering from lifecycle hooks or effects.
+* Maintain a single source of truth for sidebar state.
+* Verify that no re-render loop is causing the issue.
+
+---
+
+### General Instructions
+
+* Do not impact other modules or existing functionality.
+* Maintain clean and optimized code structure.
+* Follow best practices for state management.
+* Test thoroughly:
+
+  * Sidebar open and close
+  * Page refresh behavior
+  * Profile dropdown open and close
+  * Logout functionality
+
+Ensure all changes are implemented professionally and align with the current design system.
+
+---
+
+
+
+
+
+Update the user profile icon located at the right end of the navbar.
+
+When the user clicks the profile icon:
+
+Display a popover/dropdown menu.
+
+Show the following information:
+
+Full Name
+
+Email Address
+
+Logout button
+
+Requirements:
+
+If the full name or email is too long, truncate the text with ellipsis (e.g., ...) to maintain a clean layout.
+
+The popover should be properly aligned with the profile icon.
+
+It should close when clicking outside the popover.
+
+The design should be minimal, clean, and consistent with the existing UI.
+
+Ensure proper hover/click behavior and smooth transition effects.
+
+
+
+
+
+
+Add a new tab called “User Management” to the application.
+
+In this tab:
+
+Display a list/table of all users.
+
+Include columns such as Name, Email, Status, and Role.
+
+Add an “Add Employee” button at the top.
+
+When creating a new employee, add the following user:
+
+Name: Gopi Prasanna Anumala
+
+Email: gopiprasanna@fdestech.com
+
+Status: Active
+
+Role: Admin
+
+Ensure the UI is clean, consistent with the existing design, and includes options to edit, deactivate/activate, or delete users
+
+

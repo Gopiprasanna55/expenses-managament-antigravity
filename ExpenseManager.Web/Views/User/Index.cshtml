@@ -1,0 +1,223 @@
+@model IEnumerable<ExpenseManager.Application.DTOs.UserDto>
+@{
+    ViewData["Title"] = "User Management";
+    var callerRole = ViewData["CallerRole"]?.ToString() ?? "Admin";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">User Management</h3>
+            <p class="text-muted small mb-0">Manage roles and account access for all staff</p>
+        </div>
+        @if (callerRole == "SuperAdmin" || callerRole == "Admin")
+        {
+            <a asp-action="AddEmployee" class="btn btn-teal d-flex align-items-center gap-2">
+                <i class="bi bi-person-plus"></i> Add Employee
+            </a>
+        }
+    </div>
+
+    @if (TempData["Success"] != null)
+    {
+        <div class="alert alert-success alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+            @TempData["Success"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+    @if (TempData["Error"] != null)
+    {
+        <div class="alert alert-danger alert-dismissible fade show" role="alert" style="border-radius: 8px;">
+            @TempData["Error"]
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    }
+
+    <div class="standard-table-container">
+        <table class="standard-table ">
+            <thead>
+                <tr>
+                    <th>USER INFORMATION</th>
+                    <th>EMAIL ADDRESS</th>
+                    <th>ACCOUNT ROLE</th>
+                    <th>CREATED ON</th>
+                    <th>ACCOUNT STATUS</th>
+                    <th class="text-end" style="width: 150px;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>
+                                <div class="d-flex align-items-center gap-3">
+                                    <div class="avatar-teal">
+                                        @string.Concat(user.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(n => n[0])).ToUpper()
+                                    </div>
+                                    <span class="fw-bold text-dark">@user.FullName</span>
+                                </div>
+                            </td>
+                            <td>@user.Email</td>
+                            <td>
+                                <span class="badge-pill-standard @(user.Role == "SuperAdmin" ? "badge-pending" : "badge-active")">
+                                    <span class="dot"></span>
+                                    @user.Role
+                                </span>
+                            </td>
+                            <td class="text-muted">@user.CreatedAt.ToString("dd MMM yyyy")</td>
+                            <td>
+                                <span class="badge-pill-standard @(user.IsActive ? "badge-active" : "badge-inactive")">
+                                    <span class="dot"></span>
+                                    @(user.IsActive ? "Active" : "Inactive")
+                                </span>
+                            </td>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    @if (callerRole == "SuperAdmin" || (callerRole == "Admin" && user.Role == "HR"))
+                                    {
+                                        @if (user.Role != "SuperAdmin")
+                                        {
+                                            <a asp-action="Edit" asp-route-id="@user.Id" class="btn-icon-circle" title="Edit"><i class="bi bi-pencil"></i></a>
+                                        
+                                            <form asp-action="ToggleStatus" asp-route-id="@user.Id" method="post" class="d-inline">
+                                                <button type="submit" class="btn-icon-circle @(user.IsActive ? "text-warning" : "text-success")" title="@(user.IsActive ? "Deactivate" : "Activate")">
+                                                    <i class="bi @(user.IsActive ? "bi-person-x" : "bi-person-check")"></i>
+                                                </button>
+                                            </form>
+
+                                            <form asp-action="Delete" asp-route-id="@user.Id" method="post" class="d-inline" onsubmit="return confirm('Are you sure you want to delete this user?')">
+                                                <button type="submit" class="btn-icon-circle text-danger" title="Delete">
+                                                    <i class="bi bi-trash"></i>
+                                                </button>
+                                            </form>
+                                        }
+
+                                        @if (callerRole == "SuperAdmin" && user.Role != "SuperAdmin")
+                                        {
+                                            <div class="dropdown">
+                                                <button type="button" class="btn-icon-circle" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm p-1" style="border-radius: 8px;">
+                                                    <li>
+                                                        <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="Admin" method="post">
+                                                            <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "Admin" ? "disabled" : "")">Make Admin</button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="HR" method="post">
+                                                            <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "HR" ? "disabled" : "")">Make HR</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
+                                        }
+                                    }
+                                    else
+                                    {
+                                        <span class="text-muted small">—</span>
+                                    }
+                                </div>
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+    <div class="pagination-container rounded-bottom shadow-sm">
+        <div class="small fw-medium text-muted" id="userPaginationInfo">
+            Showing 1-10 of 100 entries
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 me-4">
+                <span class="small text-muted fw-medium">Rows per page:</span>
+                <select id="userPageSizeSelect" class="form-select form-select-sm border-0 bg-light" style="width: 70px; border-radius: 6px;">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="d-flex gap-1" id="userPaginationControls">
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        let userRowsPerPage = 10;
+        let userCurrentPage = 1;
+        let allUserRows = [];
+
+        function initUserPagination() {
+            allUserRows = Array.from(document.querySelectorAll('.standard-table tbody tr'));
+            renderUserRows();
+            updateUserPagination();
+        }
+
+        document.getElementById('userPageSizeSelect').addEventListener('change', function() {
+            userRowsPerPage = parseInt(this.value);
+            userCurrentPage = 1;
+            renderUserRows();
+            updateUserPagination();
+        });
+
+        function renderUserRows() {
+            const start = (userCurrentPage - 1) * userRowsPerPage;
+            const end = start + userRowsPerPage;
+            
+            allUserRows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        function updateUserPagination() {
+            const totalPages = Math.ceil(allUserRows.length / userRowsPerPage) || 1;
+            const controls = document.getElementById('userPaginationControls');
+            controls.innerHTML = '';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `page-btn ${userCurrentPage === 1 ? 'disabled' : ''}`;
+            prevBtn.innerHTML = '<i class="bi bi-chevron-left"></i> Previous';
+            prevBtn.disabled = userCurrentPage === 1;
+            prevBtn.onclick = () => goToUserPage(userCurrentPage - 1);
+            controls.appendChild(prevBtn);
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === userCurrentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToUserPage(i);
+                controls.appendChild(pageBtn);
+            }
+
+            // const pageNum = document.createElement('button');
+            // pageNum.className = 'page-btn active';
+            // pageNum.textContent = userCurrentPage;
+            // controls.appendChild(pageNum);
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `page-btn ${userCurrentPage === totalPages ? 'disabled' : ''}`;
+            nextBtn.innerHTML = 'Next <i class="bi bi-chevron-right"></i>';
+            nextBtn.disabled = userCurrentPage === totalPages;
+            nextBtn.onclick = () => goToUserPage(userCurrentPage + 1);
+            controls.appendChild(nextBtn);
+
+            const startIdx = (userCurrentPage - 1) * userRowsPerPage + 1;
+            const endIdx = Math.min(userCurrentPage * userRowsPerPage, allUserRows.length);
+            document.getElementById('userPaginationInfo').textContent = `Showing ${allUserRows.length > 0 ? startIdx : 0}-${endIdx} of ${allUserRows.length} entries`;
+        }
+
+        function goToUserPage(page) {
+            const totalPages = Math.ceil(allUserRows.length / userRowsPerPage) || 1;
+            if (page < 1 || page > totalPages) return;
+            userCurrentPage = page;
+            renderUserRows();
+            updateUserPagination();
+        }
+
+        initUserPagination();
+    </script>
+}

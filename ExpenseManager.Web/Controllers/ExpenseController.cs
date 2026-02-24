@@ -1,0 +1,127 @@
+using ExpenseManager.Application.DTOs;
+using ExpenseManager.Application.Interfaces;
+using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using System.Security.Claims;
+
+namespace ExpenseManager.Web.Controllers
+{
+    [Authorize]
+    public class ExpenseController : Controller
+    {
+        private readonly IExpenseService _expenseService;
+        private readonly ICategoryService _categoryService;
+        private readonly IWebHostEnvironment _environment;
+
+        public ExpenseController(IExpenseService expenseService, ICategoryService categoryService, IWebHostEnvironment environment)
+        {
+            _expenseService = expenseService;
+            _categoryService = categoryService;
+            _environment = environment;
+        }
+
+        public async Task<IActionResult> Index()
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            var expenses = await _expenseService.GetCompanyExpensesAsync(companyId);
+            return View(expenses);
+        }
+
+        public async Task<IActionResult> Create()
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            var categories = await _categoryService.GetActiveCategoriesAsync(companyId);
+            ViewBag.Categories = new SelectList(categories, "Id", "Name");
+            return View(new ExpenseDto { Date = DateTime.Today });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Create(ExpenseDto model)
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            if (ModelState.IsValid)
+            {
+                if (model.ReceiptFile != null)
+                {
+                    string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "receipts");
+                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ReceiptFile.FileName;
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await model.ReceiptFile.CopyToAsync(fileStream);
+                    }
+                    model.ReceiptPath = "/uploads/receipts/" + uniqueFileName;
+                }
+
+                model.UserId = (User.FindFirstValue("LocalUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier));
+                model.CompanyId = companyId;
+                await _expenseService.AddExpenseAsync(model);
+                return RedirectToAction(nameof(Index));
+            }
+            var categories = await _categoryService.GetActiveCategoriesAsync(companyId);
+            ViewBag.Categories = new SelectList(categories, "Id", "Name");
+            return View(model);
+        }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            var expense = await _expenseService.GetExpenseByIdAsync(id, companyId);
+            
+            if (expense == null) return NotFound();
+
+            var categories = await _categoryService.GetActiveCategoriesAsync(companyId);
+            ViewBag.Categories = new SelectList(categories, "Id", "Name");
+            return View(expense);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Edit(ExpenseDto model)
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            if (ModelState.IsValid)
+            {
+                if (model.ReceiptFile != null)
+                {
+                    string uploadsFolder = Path.Combine(_environment.WebRootPath, "uploads", "receipts");
+                    if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
+
+                    string uniqueFileName = Guid.NewGuid().ToString() + "_" + model.ReceiptFile.FileName;
+                    string filePath = Path.Combine(uploadsFolder, uniqueFileName);
+                    using (var fileStream = new FileStream(filePath, FileMode.Create))
+                    {
+                        await model.ReceiptFile.CopyToAsync(fileStream);
+                    }
+                    model.ReceiptPath = "/uploads/receipts/" + uniqueFileName;
+                }
+
+                model.UserId = (User.FindFirstValue("LocalUserId") ?? User.FindFirstValue(ClaimTypes.NameIdentifier));
+                model.CompanyId = companyId;
+                await _expenseService.UpdateExpenseAsync(model);
+                return RedirectToAction(nameof(Index));
+            }
+            var categories = await _categoryService.GetActiveCategoriesAsync(companyId);
+            ViewBag.Categories = new SelectList(categories, "Id", "Name");
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            await _expenseService.DeleteExpenseAsync(id, companyId);
+            return RedirectToAction(nameof(Index));
+        }
+
+        public async Task<IActionResult> ExportData()
+        {
+            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
+            var csvBytes = await _expenseService.ExportExpensesToCsvAsync(companyId);
+            var fileName = $"ExpenseManager_{DateTime.Now:yyyyMMdd}.csv";
+            return File(csvBytes, "text/csv", fileName);
+        }
+    }
+}

@@ -1,0 +1,58 @@
+@model RegisterViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Register";
+}
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ExpenseManager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+</head>
+<body class="bg-light d-flex align-items-center justify-content-center" style="height: 100vh;">
+    <div class="custom-card col-md-4 shadow-lg p-5">
+        <div class="text-center mb-4">
+            <div class="logo-box d-inline-block mb-3" style="background: #1e293b; color: white; padding: 10px 15px; border-radius: 12px; font-weight: bold; font-size: 1.5rem;">Fd</div>
+            <h4 class="fw-bold">Create Account</h4>
+            <p class="text-muted small">Join us to start managing your expenses</p>
+        </div>
+
+        <form asp-action="Register" method="post">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            
+            <div class="mb-3">
+                <label asp-for="FullName" class="form-label small fw-bold text-muted">FULL NAME</label>
+                <input asp-for="FullName" class="form-control form-control-custom" placeholder="John Doe" />
+                <span asp-validation-for="FullName" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Email" class="form-label small fw-bold text-muted">EMAIL ADDRESS</label>
+                <input asp-for="Email" class="form-control form-control-custom" placeholder="name@company.com" />
+                <span asp-validation-for="Email" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-3">
+                <label asp-for="Password" class="form-label small fw-bold text-muted">PASSWORD</label>
+                <input asp-for="Password" type="password" class="form-control form-control-custom" placeholder="••••••••" />
+                <span asp-validation-for="Password" class="text-danger small"></span>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="ConfirmPassword" class="form-label small fw-bold text-muted">CONFIRM PASSWORD</label>
+                <input asp-for="ConfirmPassword" type="password" class="form-control form-control-custom" placeholder="••••••••" />
+                <span asp-validation-for="ConfirmPassword" class="text-danger small"></span>
+            </div>
+
+            <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background-color: #1e3a8a; border: none; border-radius: 8px;">Create Account</button>
+            <div class="text-center mt-4">
+                <p class="small text-muted">Already have an account? <a asp-action="Login" class="text-primary fw-bold text-decoration-none">Sign in</a></p>
+            </div>
+        </form>
+    </div>
+</body>
+</html>

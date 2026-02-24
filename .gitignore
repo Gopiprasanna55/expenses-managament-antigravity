@@ -1,0 +1,11 @@
+bin/
+obj/
+*.user
+*.db
+*.sqlite
+*.log
+appsettings.Development.json
+wwwroot/uploads/
+**/bin/
+**/obj/
+ExpenseManager.Web/bin/Debug/net8.0/appsettings.json

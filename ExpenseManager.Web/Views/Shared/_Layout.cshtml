@@ -1,0 +1,162 @@
+﻿@using System.Security.Claims
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"] - ExpenseManager</title>
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
+    <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="wrapper">
+        <!-- Sidebar -->
+        <nav id="sidebar">
+            <div class="sidebar-header border-bottom border-dark d-flex justify-content-center">
+                <!-- <img src="~/logo-removebg-preview.png" alt="Logo" style="max-height: 45px; width: auto;" /> -->
+                <img src="https://fdestech.com/images/logo-footer.png" alt="Logo" style="max-height: 45px; width: auto;" />
+            </div>
+
+            <ul class="list-unstyled components">
+                <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Home" ? "active" : "")">
+                    <a asp-controller="Home" asp-action="Index">
+                        <i class="bi bi-grid-fill"></i> <span>Dashboard</span>
+                        <div class="sidebar-tooltip">Dashboard</div>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Expense" && ViewContext.RouteData.Values["Action"]?.ToString() == "Create" ? "active" : "")">
+                    <a asp-controller="Expense" asp-action="Create">
+                        <i class="bi bi-plus-circle"></i> <span>Add expense</span>
+                        <div class="sidebar-tooltip">Add expense</div>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Expense" && ViewContext.RouteData.Values["Action"]?.ToString() == "Index" ? "active" : "")">
+                    <a asp-controller="Expense" asp-action="Index">
+                        <i class="bi bi-list-ul"></i> <span>All expense</span>
+                        <div class="sidebar-tooltip">All expense</div>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Category" ? "active" : "")">
+                    <a asp-controller="Category" asp-action="Index">
+                        <i class="bi bi-tags"></i> <span>Categories</span>
+                        <div class="sidebar-tooltip">Categories</div>
+                    </a>
+                </li>
+                <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "Wallet" ? "active" : "")">
+                    <a asp-controller="Wallet" asp-action="Index">
+                        <i class="bi bi-wallet2"></i> <span>Expense wallet</span>
+                        <div class="sidebar-tooltip">Expense wallet</div>
+                    </a>
+                </li>
+                
+               
+                @if (User.IsInRole("SuperAdmin") || User.IsInRole("Admin") || User.IsInRole("HR"))
+                {
+                    <li class="@(ViewContext.RouteData.Values["Controller"]?.ToString() == "User" ? "active" : "")">
+                        <a asp-controller="User" asp-action="Index">
+                            <i class="bi bi-people"></i> <span>User Management </span>
+                            <div class="sidebar-tooltip">User Management</div>
+                        </a>
+                    </li>
+                }
+                <li>
+                    <a asp-controller="Expense" asp-action="ExportData">
+                        <i class="bi bi-download"></i> <span>Export data</span>
+                        <div class="sidebar-tooltip">Export data</div>
+                    </a>
+                </li>
+            </ul>
+
+            <!-- <div class="sidebar-footer">
+                <div class="system-badge">
+                    <span class="dot"></span> <span class="badge-text">System verified</span>
+                </div>
+            </div> -->
+        </nav>
+
+        <!-- Page Content -->
+        <div id="content">
+            <header class="top-bar">
+                <div class="navbar-left">
+                    <!-- Hamburger removed as requested -->
+                </div>
+                
+                <div class="navbar-right">
+                   <div></div>
+                    <!-- <span class="date-display"> @DateTime.Now.ToString("dddd, MMMM dd, yyyy")</span> -->
+                    
+                    <div class="user-profile">
+                        <div class="text-end d-none d-md-block">
+                            <div class="fw-bold" style="font-size: 0.9rem;">@User.FindFirst("FullName")?.Value</div>
+                            <div class="text-muted" style="font-size: 0.75rem;">
+                                @if (User.IsInRole("SuperAdmin"))
+                                {
+                                    <text>super admin</text>
+                                }
+                                else if (User.IsInRole("Admin"))
+                                {
+                                    <text>admin account</text>
+                                }
+                                else if (User.IsInRole("HR"))
+                                {
+                                    <text>HR account</text>
+                                }
+                                else
+                                {
+                                    <text>user account</text>
+                                }
+                            </div>
+                        </div>
+                        <div class="dropdown">
+                            <div class="profile-circle cursor-pointer" id="profileDropdown" data-bs-toggle="dropdown" aria-expanded="false">
+                              @string.Concat(
+                                            (User.FindFirst("FullName")?.Value ?? "U")
+                                                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                                .Take(2)
+                                                .Select(n => n[0])
+                                        ).ToUpper()
+                            </div>
+                            <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 p-3" aria-labelledby="profileDropdown" style="width: 240px; border-radius: 12px;">
+                                <li class="mb-3">
+                                    <div class="d-flex align-items-center gap-2">
+                                        <div class="profile-circle" style="width: 40px; height: 40px; flex-shrink: 0;">
+                                            @string.Join("", (User.FindFirst("FullName")?.Value ?? "U").Split(' ').Select(n => n.FirstOrDefault())).ToUpper()
+                                        </div>
+                                        <div class="overflow-hidden">
+                                            <div class="fw-bold text-truncate" style="font-size: 0.95rem;" title="@User.FindFirst("FullName")?.Value">@User.FindFirst("FullName")?.Value</div>
+                                            <div class="text-muted text-truncate" style="font-size: 0.8rem;" title="@User.FindFirst(ClaimTypes.Email)?.Value">@(User.FindFirst(ClaimTypes.Email)?.Value ?? User.FindFirst("preferred_username")?.Value)</div>
+                                        </div>
+                                    </div>
+                                </li>
+                                <li><hr class="dropdown-divider mx-n3"></li>
+                                <li>
+                                    <form asp-controller="Account" asp-action="Logout" method="post" class="mt-2">
+                                        <button type="submit" class="btn btn-outline-danger w-100 border-0 text-start px-2 py-2 d-flex align-items-center gap-2" style="font-size: 0.9rem; border-radius: 8px;">
+                                            <i class="bi bi-box-arrow-right"></i> Sign out
+                                        </button>
+                                    </form>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </header>
+
+            <main role="main" class="main-container">
+                @RenderBody()
+            </main>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            // Sidebar toggle logic removed as per request
+        });
+    </script>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+</html>

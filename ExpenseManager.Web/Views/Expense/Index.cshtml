@@ -1,0 +1,407 @@
+@model IEnumerable<ExpenseManager.Application.DTOs.ExpenseDto>
+@{
+    ViewData["Title"] = "All expense";
+}
+
+<div class="container-fluid">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <div>
+            <h3 class="fw-bold mb-1">Expense History</h3>
+            <p class="text-muted small mb-0">Track and manage all your office expenditures</p>
+        </div>
+        <a asp-action="Create" class="btn btn-teal d-flex align-items-center gap-2">
+            <i class="bi bi-plus-lg"></i> Add Expense
+        </a>
+    </div>
+
+    <div class="custom-card mb-4">
+        <div class="row g-3 align-items-center">
+            <div class="col-md-3">
+                <div class="filter-input-group">
+                    <i class="bi bi-search"></i>
+                    <input type="text" id="searchInput" placeholder="Search expenses...">
+                </div>
+            </div>
+            <div class="col-md-4">
+                <div class="filter-input-group">
+                    <i class="bi bi-calendar3 me-2"></i>
+                    <input type="date" id="dateFrom" title="From Date">
+                    <span class="text-muted px-2">to</span>
+                    <input type="date" id="dateTo" title="To Date">
+                </div>
+            </div>
+            <div class="col-md-2">
+                <div class="filter-input-group">
+                    <i class="bi bi-tag me-2"></i>
+                    <select id="categoryFilter">
+                        <option value="">All Categories</option>
+                        @foreach (var cat in Model.Select(e => e.CategoryName).Distinct())
+                        {
+                            <option value="@cat">@cat</option>
+                        }
+                    </select>
+                </div>
+            </div>
+            <div class="col-md-3 text-end">
+                <div class="d-flex justify-content-end gap-2">
+                    <a asp-action="ExportData" class="btn-icon-circle" title="Export Data">
+                        <i class="bi bi-download"></i>
+                    </a>
+                    <button class="btn-icon-circle" title="Advanced Filters">
+                        <i class="bi bi-funnel"></i>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="standard-table-container">
+        <table class="standard-table" id="expensesTable">
+            <thead>
+                <tr>
+                    <th class="text-center" style="width: 80px;">S.NO</th>
+                    <th>EXPENSE DETAILS</th>
+                    <th>CATEGORY</th>
+                    <th class="text-end">AMOUNT</th>
+                    <th class="text-center">RECEIPT</th>
+                    <th class="text-end" style="width: 150px;">ACTIONS</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var item in Model)
+                {
+                    <tr>
+                        <td class="text-center fw-medium text-muted"></td>
+                        <td>
+                            <div class="d-flex align-items-center gap-3">
+                               
+                                <div>
+                                    <div class="fw-bold text-dark" style="text-transform: capitalize">@item.Title</div>
+                                    <small class="text-muted">@item.Date.ToString("dd MMM yyyy")</small>
+                                    <div class="d-none expense-description">@item.Description</div>
+                                </div>
+                            </div>
+                            <div class="d-none">@item.Date.ToString("dd/MM/yyyy")</div> <!-- Hidden for script filtering -->
+                        </td>
+                        <td>
+                            <span class="badge-pill-standard badge-active">
+                                <span class="dot"></span>
+                                @item.CategoryName
+                            </span>
+                        </td>
+                        <td class="text-end fw-bold text-dark">₹@item.Amount.ToString("N2")</td>
+                        <td class="text-center">
+                            @if (!string.IsNullOrEmpty(item.ReceiptPath))
+                            {
+                                <button type="button" class="btn-icon-circle mx-auto" 
+                                        onclick="showReceiptPreview('@item.ReceiptPath')" 
+                                        title="View Receipt">
+                                    <i class="bi bi-file-earmark-image"></i>
+                                </button>
+                            }
+                            else
+                            {
+                                <span class="text-muted small">N/A</span>
+                            }
+                        </td>
+                        <td class="text-end">
+                            <div class="d-flex justify-content-end gap-2">
+                                <button type="button" class="btn-icon-circle text-primary" 
+                                        onclick="viewExpenseDetails({ 
+                                            id: '@item.Id', 
+                                            title: '@item.Title', 
+                                            description: '@(item.Description ?? "")',
+                                            amount: '@item.Amount', 
+                                            date: '@item.Date.ToString("dd MMM yyyy")', 
+                                            category: '@item.CategoryName', 
+                                            paymentMethod: '@(item.PaymentMethod ?? "N/A")',
+                                            receiptPath: '@item.ReceiptPath'
+                                        })">
+                                    <i class="bi bi-eye"></i>
+                                </button>
+                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon-circle"><i class="bi bi-pencil"></i></a>
+                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Are you sure?')" class="d-inline">
+                                    <button type="submit" class="btn-icon-circle text-danger"><i class="bi bi-trash"></i></button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+        <div class="pagination-container rounded-bottom shadow-sm">
+        <div class="small fw-medium text-muted" id="paginationInfo">
+            Showing 1-10 of 100 entries
+        </div>
+        <div class="d-flex align-items-center gap-3">
+            <div class="d-flex align-items-center gap-2 me-4">
+                <span class="small text-muted fw-medium">Rows per page:</span>
+                <select id="pageSizeSelect" class="form-select form-select-sm border-0 bg-light" style="width: 70px; border-radius: 6px;">
+                    <option value="10" selected>10</option>
+                    <option value="20">20</option>
+                    <option value="50">50</option>
+                </select>
+            </div>
+            <div class="d-flex gap-1" id="paginationControls">
+                <!-- Navigation buttons will be injected here -->
+            </div>
+        </div>
+    </div>
+    </div>
+
+    
+</div>
+
+
+
+<!-- Expense Detail Modal -->
+<div class="modal fade" id="expenseDetailModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content border-0" style="border-radius: 12px;">
+            <div class="modal-header border-1 pb-2">
+                <h5 class="modal-title fw-bold">Expense Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <div class="row g-4">
+                    <div class="col-md-6">
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">TITLE</label>
+                            <div id="detailTitle" class="fw-bold fs-5 text-dark" style="text-transform: capitalize;"></div>
+                        </div>
+                        <div class="mb-3">
+                            <label class="small text-muted fw-bold">DESCRIPTION</label>
+                            <div id="detailDescription" class="text-dark small"></div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="small text-muted fw-bold">AMOUNT</label>
+                                <div id="detailAmount" class="fw-bold text-primary fs-5"></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted fw-bold">DATE</label>
+                                <div id="detailDate"></div>
+                            </div>
+                        </div>
+                        <div class="row mb-3">
+                            <div class="col-6">
+                                <label class="small text-muted fw-bold">CATEGORY</label>
+                                <div><span id="detailCategory" class="badge-category"></span></div>
+                            </div>
+                            <div class="col-6">
+                                <label class="small text-muted fw-bold">PAYMENT METHOD</label>
+                                <div id="detailPaymentMethod"></div>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-6 border-start">
+                        <label class="small text-muted fw-bold mb-2">RECEIPT PREVIEW</label>
+                        <div id="receiptPreviewContainer" class="text-center bg-light rounded-3 p-3 overflow-hidden" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
+                            <span id="noReceiptMsg" class="text-muted small">No receipt uploaded</span>
+                            <img id="receiptImg" src="" class="img-fluid d-none" style="max-height: 250px;" />
+                            <iframe id="receiptPdf" src="" class="w-100 d-none" style="height: 250px;"></iframe>
+                        </div>
+                        <div id="receiptDownloadLink" class="text-center mt-2 d-none">
+                            <a href="#" class="btn btn-sm btn-outline-primary" download><i class="bi bi-download"></i> Download Receipt</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer border-1 pt-2">
+                <div class="me-auto">
+                    <a id="editLink" href="#" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+                    <form id="deleteForm" method="post" class="d-inline ms-1">
+                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this expense?')"><i class="bi bi-trash"></i> Delete</button>
+                    </form>
+                </div>
+                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const expenseModal = new bootstrap.Modal(document.getElementById('expenseDetailModal'));
+        let rowsPerPage = 1;
+        let currentPage = 1;
+        let filteredRows = [];
+
+        function viewExpenseDetails(data) {
+            console.log("Viewing expense:", data);
+            
+            const title = data.title || '';
+            const description = data.description || 'N/A';
+            const amount = data.amount || 0;
+            const date = data.date || '';
+            const category = data.category || 'N/A';
+            const paymentMethod = data.paymentMethod || 'N/A';
+            const receiptPath = data.receiptPath || data.receipt || '';
+            const id = data.id;
+
+            document.getElementById('detailTitle').textContent = title;
+            document.getElementById('detailDescription').textContent = description;
+            document.getElementById('detailAmount').textContent = '₹' + parseFloat(amount).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+            document.getElementById('detailDate').textContent = date;
+            document.getElementById('detailCategory').textContent = category;
+            document.getElementById('detailPaymentMethod').textContent = paymentMethod;
+ 
+            document.getElementById('editLink').href = '/Expense/Edit/' + id;
+            document.getElementById('deleteForm').action = '/Expense/Delete/' + id;
+
+            const previewContainer = document.getElementById('receiptPreviewContainer');
+            const noReceiptMsg = document.getElementById('noReceiptMsg');
+            const receiptImg = document.getElementById('receiptImg');
+            const receiptPdf = document.getElementById('receiptPdf');
+            const downloadLink = document.getElementById('receiptDownloadLink');
+
+            noReceiptMsg.classList.remove('d-none');
+            receiptImg.classList.add('d-none');
+            receiptPdf.classList.add('d-none');
+            downloadLink.classList.add('d-none');
+
+            if (receiptPath && receiptPath !== '') {
+                noReceiptMsg.classList.add('d-none');
+                downloadLink.classList.remove('d-none');
+                downloadLink.querySelector('a').href = receiptPath;
+ 
+                if (receiptPath.toLowerCase().endsWith('.pdf')) {
+                    receiptPdf.src = receiptPath;
+                    receiptPdf.classList.remove('d-none');
+                } else {
+                    receiptImg.src = receiptPath;
+                    receiptImg.classList.remove('d-none');
+                }
+            }
+            expenseModal.show();
+        }
+
+        document.getElementById('searchInput').addEventListener('keyup', () => { currentPage = 1; filterTable(); });
+        document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; filterTable(); });
+        document.getElementById('dateFrom').addEventListener('change', () => { currentPage = 1; filterTable(); });
+        document.getElementById('dateTo').addEventListener('change', () => { currentPage = 1; filterTable(); });
+        document.getElementById('pageSizeSelect').addEventListener('change', function() {
+            rowsPerPage = parseInt(this.value);
+            currentPage = 1;
+            filterTable();
+        });
+
+        function filterTable() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const category = document.getElementById('categoryFilter').value.toLowerCase();
+            const fromDateStr = document.getElementById('dateFrom').value;
+            const toDateStr = document.getElementById('dateTo').value;
+            
+            const fromDate = fromDateStr ? new Date(fromDateStr) : null;
+            const toDate = toDateStr ? new Date(toDateStr).setHours(23, 59, 59, 999) : null;
+
+            const allRows = Array.from(document.querySelectorAll('#expensesTable tbody tr'));
+            
+            filteredRows = allRows.filter(row => {
+                // Adjusting for new table structure:
+                // Column 1 is Details (Title + Hidden Date)
+                // Column 2 is Category
+                const detailsContainer = row.cells[1];
+                const title = detailsContainer.querySelector('.fw-bold').textContent.toLowerCase();
+                const dateText = detailsContainer.querySelector('.d-none').textContent.trim(); // dd/mm/yyyy
+                const cat = row.cells[2].textContent.toLowerCase();
+                
+                const dateParts = dateText.split('/');
+                const rowDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
+
+                const matchesSearch = title.includes(search);
+                const matchesCategory = category === "" || cat.includes(category);
+                const matchesFrom = !fromDate || rowDate >= fromDate;
+                const matchesTo = !toDate || rowDate <= toDate;
+
+                return matchesSearch && matchesCategory && matchesFrom && matchesTo;
+            });
+
+            allRows.forEach(row => row.style.display = "none");
+            
+            updatePagination();
+            renderVisibleRows();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
+            const controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+            prevBtn.innerHTML = '<i class="bi bi-chevron-left"></i> Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => goToPage(currentPage - 1);
+            controls.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                controls.appendChild(pageBtn);
+            }
+
+            // const pageNum = document.createElement('button');
+            // pageNum.className = 'page-btn active';
+            // pageNum.textContent = currentPage;
+            // controls.appendChild(pageNum);
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextBtn.innerHTML = 'Next <i class="bi bi-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => goToPage(currentPage + 1);
+            controls.appendChild(nextBtn);
+
+            const startIdx = (currentPage - 1) * rowsPerPage + 1;
+            const endIdx = Math.min(currentPage * rowsPerPage, filteredRows.length);
+            document.getElementById('paginationInfo').textContent = `Showing ${filteredRows.length > 0 ? startIdx : 0}-${endIdx} of ${filteredRows.length} entries`;
+        }
+
+        // function renderVisibleRows() {
+        //     const start = (currentPage - 1) * rowsPerPage;
+        //     const end = start + rowsPerPage;
+        //     filteredRows.slice(start, end).forEach((row, index) => {
+        //         row.cells[0].textContent = start + index + 1;
+        //         row.style.display = "";
+        //     });
+        // }
+        function renderVisibleRows() {
+    const start = (currentPage - 1) * rowsPerPage;
+    const end = start + rowsPerPage;
+
+    // ✅ First hide ALL rows
+    filteredRows.forEach(row => {
+        row.style.display = "none";
+    });
+
+    // ✅ Then show only current page rows
+    filteredRows.slice(start, end).forEach((row, index) => {
+        row.cells[0].textContent = start + index + 1;
+        row.style.display = "";
+    });
+}
+
+        // function goToPage(page) {
+        //     currentPage = page;
+        //     renderVisibleRows();
+        //     updatePagination();
+        // }
+
+
+        function goToPage(page) {
+    const totalPages = Math.ceil(filteredRows.length / rowsPerPage) || 1;
+
+    if (page < 1 || page > totalPages) return; // ✅ prevent overflow
+
+    currentPage = page;
+    renderVisibleRows();
+    updatePagination();
+}
+
+        // Init
+        filterTable();
+    </script>
+}

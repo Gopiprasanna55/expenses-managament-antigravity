@@ -1,0 +1,130 @@
+@model ExpenseManager.Application.DTOs.ExpenseDto
+@{
+    ViewData["Title"] = "Add New Expense";
+}
+
+<div class="container d-flex justify-content-center py-4">
+    <div class="custom-card p-4 shadow-sm" style="max-width: 650px; width: 100%;">
+        <div class="text-center mb-4">
+            <h4 class="fw-bold mb-1">Add New Expense</h4>
+            <p class="text-muted small">Enter details for the new transaction entry</p>
+        </div>
+
+        <form asp-action="Create" method="post" enctype="multipart/form-data">
+            <div asp-validation-summary="ModelOnly" class="text-danger small mb-3"></div>
+            
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label asp-for="Date" class="form-label small fw-bold text-muted"><i class="bi bi-calendar3"></i> DATE</label>
+                    <input asp-for="Date" type="date" class="form-control form-control-custom" />
+                    <span asp-validation-for="Date" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="Amount" class="form-label small fw-bold text-muted"><i class="bi bi-currency-rupee"></i> AMOUNT (₹)</label>
+                    <input asp-for="Amount" class="form-control form-control-custom" placeholder="0.00" />
+                    <span asp-validation-for="Amount" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label asp-for="Title" class="form-label small fw-bold text-muted"><i class="bi bi-card-text"></i> DESCRIPTION</label>
+                <input asp-for="Title" class="form-control form-control-custom" placeholder="Enter expense title (e.g., Office Supplies, Client Dinner)" />
+                <span asp-validation-for="Title" class="text-danger small"></span>
+            </div>
+
+            <div class="row g-3 mb-4">
+                <div class="col-md-6">
+                    <label asp-for="CategoryId" class="form-label small fw-bold text-muted"><i class="bi bi-tag"></i> CATEGORY</label>
+                    <div class="position-relative">
+                        <select asp-for="CategoryId" class="form-select form-control-custom pe-5" asp-items="ViewBag.Categories">
+                            <option value="">Select Category</option>
+                        </select>
+                    </div>
+                    <span asp-validation-for="CategoryId" class="text-danger small"></span>
+                </div>
+                <div class="col-md-6">
+                    <label asp-for="PaymentMethod" class="form-label small fw-bold text-muted"><i class="bi bi-credit-card"></i> PAYMENT METHOD</label>
+                    <select asp-for="PaymentMethod" class="form-select form-control-custom">
+                        <option value="">Select Method</option>
+                        <option value="Cash">Cash</option>
+                        <option value="Credit Card">Credit Card</option>
+                        <option value="Debit Card">Debit Card</option>
+                        <option value="UPI">UPI</option>
+                        <option value="Net Banking">Net Banking</option>
+                        <option value="Wallet">Wallet</option>
+                    </select>
+                    <span asp-validation-for="PaymentMethod" class="text-danger small"></span>
+                </div>
+            </div>
+
+            <div class="mb-4">
+                <label class="form-label small fw-bold text-muted"><i class="bi bi-info-circle"></i> VENDOR (OPTIONAL)</label>
+                <input type="text" class="form-control form-control-custom" placeholder="Enter vendor name" />
+            </div>
+
+            <div class="">
+                <label class="form-label small fw-bold text-muted"> <i class="bi bi-paperclip"></i> RECEIPT UPLOAD</label>
+                <div class="upload-zone border border-pattern text-center p-4 rounded-3 d-flex flex-column align-items-center justify-content-center" 
+                     onclick="document.getElementById('receiptInput').click();" 
+                     style="border-style: dashed !important; border-width: 2px !important; cursor: pointer; background: #fcfcfd; min-height: 140px; transition: 0.2s;">
+                    <input type="file" asp-for="ReceiptFile" id="receiptInput" class="d-none" accept=".png,.jpg,.jpeg,.pdf" onchange="handleFileChange(this)" />
+                    <div id="uploadContent">
+                        <i class="bi bi-cloud-arrow-up fs-2 text-primary mb-2"></i>
+                        <p class="mb-1 fw-bold small text-dark">Click to upload or drag and drop</p>
+                        <small class="text-muted" style="font-size: 0.75rem;">PNG, JPG, PDF up to 10MB</small>
+                    </div>
+                    <div id="fileFeedback" class="d-none w-100">
+                        <div class="d-flex align-items-center justify-content-center gap-2 p-2 bg-white rounded border">
+                            <i class="bi bi-file-earmark-check fs-4 text-success"></i>
+                            <span id="fileName" class="small fw-semibold truncate-text" style="max-width: 200px;"></span>
+                            <button type="button" class="btn btn-link btn-sm text-danger p-0 ms-2" onclick="event.stopPropagation(); removeFile();">
+                                <i class="bi bi-x-circle-fill"></i>
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                <span asp-validation-for="ReceiptFile" class="text-danger small"></span>
+            </div>
+
+
+            <div class="d-flex justify-content-end gap-3 pt-3">
+                <a asp-action="Index" class="btn btn-outline-secondary px-4" style="border-radius: 8px;">Cancel</a>
+                <button type="submit" class="btn btn-primary px-4" style="background-color: #1e3a8a; border: none; border-radius: 8px;">Add Expense</button>
+            </div>
+        </form>
+    </div>
+</div>
+
+@section Scripts {
+    @{await Html.RenderPartialAsync("_ValidationScriptsPartial");}
+    <script>
+        function handleFileChange(input) {
+            const content = document.getElementById('uploadContent');
+            const feedback = document.getElementById('fileFeedback');
+            const fileName = document.getElementById('fileName');
+            
+            if (input.files && input.files[0]) {
+                const file = input.files[0];
+                if (file.size > 10 * 1024 * 1024) {
+                    alert('File size exceeds 10MB limit.');
+                    input.value = '';
+                    return;
+                }
+                
+                fileName.textContent = file.name;
+                content.classList.add('d-none');
+                feedback.classList.remove('d-none');
+            }
+        }
+
+        function removeFile() {
+            const input = document.getElementById('receiptInput');
+            const content = document.getElementById('uploadContent');
+            const feedback = document.getElementById('fileFeedback');
+            
+            input.value = '';
+            content.classList.remove('d-none');
+            feedback.classList.add('d-none');
+        }
+    </script>
+}
