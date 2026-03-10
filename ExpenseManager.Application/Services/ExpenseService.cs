@@ -50,29 +50,52 @@ namespace ExpenseManager.Application.Services
         {
             var expense = _mapper.Map<Expense>(expenseDto);
             expense.CreatedAt = DateTime.UtcNow;
-            // CompanyId is required on the entity now
-            if (string.IsNullOrEmpty(expense.CompanyId))
+
+            // Handle new category creation
+            if (!string.IsNullOrEmpty(expenseDto.NewCategoryName))
             {
-                // In a real scenario, should be passed in DTO or set from context
-                // For now, assume it's in DTO or throw if missing
+                var newCategory = new Category
+                {
+                    Name = expenseDto.NewCategoryName,
+                    CompanyId = expenseDto.CompanyId,
+                    IsActive = true,
+                    CreatedAt = DateTime.UtcNow
+                };
+                await _categoryRepository.AddAsync(newCategory);
+                await _categoryRepository.SaveChangesAsync();
+                expense.CategoryId = newCategory.Id;
             }
 
-            await _expenseRepository.AddAsync(expense);
+            try
+            {
+                 await _expenseRepository.AddAsync(expense);
+                 await _expenseRepository.SaveChangesAsync(); // Save to get the Expense.Id
+            }
+            catch (Exception ex)
+            {
+                 throw new Exception($"Error saving Expense: UserId='{expense.UserId}', CategoryId={expense.CategoryId}, CompanyId='{expense.CompanyId}'. " + ex.InnerException?.Message, ex);
+            }
             
             // Add Wallet Activity
-            var activity = new WalletActivity
+            try 
             {
-                UserId = expenseDto.UserId!,
-                CompanyId = expense.CompanyId,
-                Amount = expenseDto.Amount,
-                Type = WalletActivityType.Expense,
-                Date = expenseDto.Date,
-                CreatedAt = DateTime.UtcNow
-            };
-            await _activityRepository.AddAsync(activity);
-
-            await _expenseRepository.SaveChangesAsync();
-            await _activityRepository.SaveChangesAsync();
+                var activity = new WalletActivity
+                {
+                    UserId = expenseDto.UserId!,
+                    CompanyId = expense.CompanyId,
+                    Amount = expenseDto.Amount.Value,
+                    Type = WalletActivityType.Expense,
+                    Date = expenseDto.Date,
+                    CreatedAt = DateTime.UtcNow,
+                    ExpenseId = expense.Id // Link to the newly created expense
+                };
+                await _activityRepository.AddAsync(activity);
+                await _activityRepository.SaveChangesAsync();
+            }
+            catch (Exception ex)
+            {
+                throw new Exception("Error saving WalletActivity: " + ex.InnerException?.Message, ex);
+            }
 
             return expense.Id;
         }
@@ -85,13 +108,31 @@ namespace ExpenseManager.Application.Services
             {
                 expense.Title = expenseDto.Title;
                 expense.Description = expenseDto.Description;
-                expense.Amount = expenseDto.Amount;
+                expense.Amount = expenseDto.Amount.Value;
                 expense.Date = expenseDto.Date;
-                expense.CategoryId = expenseDto.CategoryId;
-                expense.ReceiptPath = expenseDto.ReceiptPath;
+                expense.CategoryId = (int)expenseDto.CategoryId!;
+                expense.VendorName = expenseDto.VendorName;
+                
+                if (expenseDto.ReceiptPath != null)
+                {
+                    expense.ReceiptPath = expenseDto.ReceiptPath;
+                }
+                
                 expense.PaymentMethod = expenseDto.PaymentMethod;
 
                 await _expenseRepository.UpdateAsync(expense);
+                
+                // Update associated Wallet Activity
+                var activities = await _activityRepository.GetByCompanyIdAsync(expenseDto.CompanyId);
+                var activity = activities.FirstOrDefault(a => a.ExpenseId == expense.Id);
+                if (activity != null)
+                {
+                    activity.Amount = expense.Amount;
+                    activity.Date = expense.Date;
+                    await _activityRepository.UpdateAsync(activity);
+                    await _activityRepository.SaveChangesAsync();
+                }
+
                 await _expenseRepository.SaveChangesAsync();
             }
         }
@@ -101,9 +142,42 @@ namespace ExpenseManager.Application.Services
             var expense = await _expenseRepository.GetByIdAsync(id);
             if (expense != null && expense.CompanyId == companyId)
             {
+                // Delete associated Wallet Activity
+                var activities = await _activityRepository.GetByCompanyIdAsync(companyId);
+                var activity = activities.FirstOrDefault(a => a.ExpenseId == id);
+                if (activity != null)
+                {
+                    await _activityRepository.DeleteAsync(activity);
+                    await _activityRepository.SaveChangesAsync();
+                }
+
                 await _expenseRepository.DeleteAsync(expense);
                 await _expenseRepository.SaveChangesAsync();
             }
+        }
+
+        public async Task BulkDeleteExpensesAsync(IEnumerable<int> ids, string companyId)
+        {
+            var activities = await _activityRepository.GetByCompanyIdAsync(companyId);
+            
+            foreach (var id in ids)
+            {
+                var expense = await _expenseRepository.GetByIdAsync(id);
+                if (expense != null && expense.CompanyId == companyId)
+                {
+                    // Delete associated Wallet Activity
+                    var activity = activities.FirstOrDefault(a => a.ExpenseId == id);
+                    if (activity != null)
+                    {
+                        await _activityRepository.DeleteAsync(activity);
+                    }
+
+                    await _expenseRepository.DeleteAsync(expense);
+                }
+            }
+            
+            await _activityRepository.SaveChangesAsync();
+            await _expenseRepository.SaveChangesAsync();
         }
 
         public async Task<DashboardDto> GetDashboardDataAsync(string companyId, int? month = null, int? year = null)
@@ -141,8 +215,8 @@ namespace ExpenseManager.Application.Services
             decimal actualCurrentBalance = lifetimeRecharge - lifetimeExpenses;
 
             // Requirement: Total Remaining Balance = Total Wallet Balance - Amount Spent in Current Month
-            // User formula: LifetimeRecharge - currentMonthSpending
-            decimal totalRemainingBalanceFormula = lifetimeRecharge - currentMonthSpending;
+            // User formula updated: LifetimeRecharge - LifetimeExpenses
+            decimal totalRemainingBalanceFormula = lifetimeRecharge - lifetimeExpenses;
 
             var dashboard = new DashboardDto
             {

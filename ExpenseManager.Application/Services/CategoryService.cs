@@ -71,5 +71,15 @@ namespace ExpenseManager.Application.Services
                 await _categoryRepository.SaveChangesAsync();
             }
         }
+
+        public async Task DeleteCategoryAsync(int id, string companyId)
+        {
+            var category = await _categoryRepository.GetByIdAsync(id);
+            if (category != null && category.CompanyId == companyId)
+            {
+                await _categoryRepository.DeleteAsync(id);
+                await _categoryRepository.SaveChangesAsync();
+            }
+        }
     }
 }

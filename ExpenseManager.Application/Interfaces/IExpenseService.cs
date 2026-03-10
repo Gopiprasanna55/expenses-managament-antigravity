@@ -9,6 +9,7 @@ namespace ExpenseManager.Application.Interfaces
         Task<int> AddExpenseAsync(ExpenseDto expenseDto);
         Task UpdateExpenseAsync(ExpenseDto expenseDto);
         Task DeleteExpenseAsync(int id, string companyId);
+        Task BulkDeleteExpensesAsync(IEnumerable<int> ids, string companyId);
         Task<DashboardDto> GetDashboardDataAsync(string companyId, int? month = null, int? year = null);
         Task<byte[]> ExportExpensesToCsvAsync(string companyId);
     }

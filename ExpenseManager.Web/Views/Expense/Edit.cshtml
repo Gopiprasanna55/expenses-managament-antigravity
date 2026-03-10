@@ -57,8 +57,9 @@
             </div>
 
             <div class="mb-4">
-                <label class="form-label small fw-bold text-muted"><i class="bi bi-info-circle"></i> VENDOR (OPTIONAL)</label>
-                <input type="text" class="form-control form-control-custom" placeholder="Enter vendor name" />
+                <label asp-for="VendorName" class="form-label small fw-bold text-muted"><i class="bi bi-info-circle"></i> VENDOR (OPTIONAL)</label>
+                <input asp-for="VendorName" type="text" class="form-control form-control-custom" placeholder="Enter vendor name" />
+                <span asp-validation-for="VendorName" class="text-danger small"></span>
             </div>
 
             <div class="mb-4">

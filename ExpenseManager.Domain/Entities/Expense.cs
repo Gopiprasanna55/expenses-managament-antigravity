@@ -36,6 +36,8 @@ namespace ExpenseManager.Domain.Entities
         [Required]
         public string CompanyId { get; set; } = string.Empty;
 
+        public string? VendorName { get; set; }
+
         public string? ReceiptPath { get; set; }
 
         public string? PaymentMethod { get; set; }

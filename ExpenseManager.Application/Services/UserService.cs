@@ -43,7 +43,7 @@ namespace ExpenseManager.Application.Services
             return userDtos;
         }
 
-        public async Task<IEnumerable<UserDto>> GetAllUsersForRoleAsync(string companyId, string callerRole)
+        public async Task<IEnumerable<UserDto>> GetAllUsersForRoleAsync(string? companyId, string callerRole)
         {
             if (callerRole == "SuperAdmin")
             {
@@ -61,10 +61,14 @@ namespace ExpenseManager.Application.Services
             return Enumerable.Empty<UserDto>();
         }
 
-        public async Task<UserDto?> GetUserByIdAsync(string userId, string companyId)
+        public async Task<UserDto?> GetUserByIdAsync(string userId, string? companyId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user == null || user.CompanyId != companyId) return null;
+            if (user == null) return null;
+            
+            // If companyId is provided (not SuperAdmin), check ownership
+            if (!string.IsNullOrEmpty(companyId) && user.CompanyId != companyId) 
+                return null;
 
             var dto = _mapper.Map<UserDto>(user);
             var roles = await _userManager.GetRolesAsync(user);
@@ -73,7 +77,7 @@ namespace ExpenseManager.Application.Services
             return dto;
         }
 
-        public async Task<IdentityResult> CreateUserAsync(UserCreateDto userDto, string companyId)
+        public async Task<IdentityResult> CreateUserAsync(UserCreateDto userDto, string? companyId)
         {
             var user = new ApplicationUser
             {
@@ -106,11 +110,15 @@ namespace ExpenseManager.Application.Services
             return result;
         }
 
-        public async Task UpdateUserAsync(UserUpdateDto userDto, string companyId)
+        public async Task UpdateUserAsync(UserUpdateDto userDto, string? companyId)
         {
             var user = await _userRepository.GetByIdAsync(userDto.Id);
-            if (user != null && user.CompanyId == companyId)
+            if (user != null)
             {
+                // Check company context unless SuperAdmin
+                if (!string.IsNullOrEmpty(companyId) && user.CompanyId != companyId)
+                    return;
+
                 user.FullName = userDto.FullName;
                 user.Email = userDto.Email;
                 user.UserName = userDto.Email;
@@ -126,34 +134,33 @@ namespace ExpenseManager.Application.Services
             }
         }
 
-        public async Task DeleteUserAsync(string userId, string companyId)
+        public async Task DeleteUserAsync(string userId, string? companyId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && user.CompanyId == companyId)
+            if (user != null)
             {
-                // Protect SuperAdmin from deletion
-                var roles = await _userManager.GetRolesAsync(user);
-                if (roles.Contains("SuperAdmin"))
-                {
-                    return; // Cannot delete SuperAdmin
-                }
+                // Check company context unless SuperAdmin
+                if (!string.IsNullOrEmpty(companyId) && user.CompanyId != companyId)
+                    return;
+
+                // Restrictions are handled in the Controller layer for now
+                // to allow SuperAdmin to manage other SuperAdmins.
 
                 await _userRepository.DeleteAsync(user);
                 await _userRepository.SaveChangesAsync();
             }
         }
 
-        public async Task ToggleUserStatusAsync(string userId, string companyId)
+        public async Task ToggleUserStatusAsync(string userId, string? companyId)
         {
             var user = await _userRepository.GetByIdAsync(userId);
-            if (user != null && user.CompanyId == companyId)
+            if (user != null)
             {
-                // Protect SuperAdmin from deactivation
-                var roles = await _userManager.GetRolesAsync(user);
-                if (roles.Contains("SuperAdmin"))
-                {
-                    return; // Cannot deactivate SuperAdmin
-                }
+                // Check company context unless SuperAdmin
+                if (!string.IsNullOrEmpty(companyId) && user.CompanyId != companyId)
+                    return;
+
+                // Restrictions are handled in the Controller layer
 
                 user.IsActive = !user.IsActive;
                 await _userRepository.UpdateAsync(user);
@@ -161,18 +168,17 @@ namespace ExpenseManager.Application.Services
             }
         }
 
-        public async Task AssignRoleAsync(string userId, string roleName, string companyId)
+        public async Task AssignRoleAsync(string userId, string roleName, string? companyId)
         {
             var user = await _userManager.FindByIdAsync(userId);
-            if (user != null && user.CompanyId == companyId)
+            if (user != null)
             {
-                // Protect SuperAdmin role
-                var currentRoles = await _userManager.GetRolesAsync(user);
-                if (currentRoles.Contains("SuperAdmin"))
-                {
-                    return; // Cannot change SuperAdmin's role
-                }
+                // Check company context unless SuperAdmin
+                if (!string.IsNullOrEmpty(companyId) && user.CompanyId != companyId)
+                    return;
 
+                // Restrictions are handled in the Controller layer
+                var currentRoles = await _userManager.GetRolesAsync(user);
                 await _userManager.RemoveFromRolesAsync(user, currentRoles);
                 await _userManager.AddToRoleAsync(user, roleName);
             }

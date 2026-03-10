@@ -15,5 +15,6 @@ namespace ExpenseManager.Application.DTOs
         public string Type { get; set; } = string.Empty;
         public string CompanyId { get; set; } = string.Empty;
         public DateTime Date { get; set; }
+        public string? Description { get; set; }
     }
 }

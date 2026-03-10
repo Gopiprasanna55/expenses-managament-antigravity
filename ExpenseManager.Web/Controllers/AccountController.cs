@@ -98,13 +98,18 @@ namespace ExpenseManager.Web.Controllers
 
         [AllowAnonymous]
         [HttpGet]
-        public IActionResult AccessDenied() => View();
+        public IActionResult AccessDenied()
+        {
+            TempData["Error"] = "Action not allowed";
+            return RedirectToAction("Index", "Home");
+        }
 
         [AllowAnonymous]
         [HttpGet]
         public IActionResult AuthError(string? message = null)
         {
-            return Content(message ?? "Unauthorized: Contact administrator");
+            ViewData["ErrorMessage"] = message ?? "you are unauthorized Contact administrator.";
+            return View();
         }
     }
 }

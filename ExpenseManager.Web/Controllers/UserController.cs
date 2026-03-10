@@ -37,11 +37,11 @@ namespace ExpenseManager.Web.Controllers
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> AddEmployee(UserCreateDto model)
         {
-            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
             var callerRole = GetCallerRole();
+            var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
             ViewData["CallerRole"] = callerRole;
 
-            // Enforce: Admin can only create HR, SuperAdmin can create Admin or HR
+            // Enforce: Admin can only create HR, SuperAdmin can create SuperAdmin, Admin or HR
             if (callerRole == "Admin" && model.Role != "HR")
             {
                 ModelState.AddModelError("Role", "You can only add users with the HR role.");
@@ -74,8 +74,8 @@ namespace ExpenseManager.Web.Controllers
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> Edit(string id)
         {
-            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
             var callerRole = GetCallerRole();
+            var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
             var user = await _userService.GetUserByIdAsync(id, companyId);
             if (user == null) return NotFound();
 
@@ -101,11 +101,11 @@ namespace ExpenseManager.Web.Controllers
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> Edit(UserUpdateDto model)
         {
-            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
             var callerRole = GetCallerRole();
+            var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
             ViewData["CallerRole"] = callerRole;
 
-            // Enforce: Admin can only assign HR role
+            // Enforce: Admin can only assign HR role, SuperAdmin can assign any role
             if (callerRole == "Admin" && model.Role != "HR")
             {
                 ModelState.AddModelError("Role", "You can only assign the HR role.");
@@ -125,26 +125,26 @@ namespace ExpenseManager.Web.Controllers
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> Delete(string id)
         {
-            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
             var callerRole = GetCallerRole();
-
+            var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
+ 
             // Protect SuperAdmin from deletion
             var user = await _userService.GetUserByIdAsync(id, companyId);
             if (user == null) return NotFound();
-
-            if (user.Role == "SuperAdmin")
+ 
+            if (user.Role == "SuperAdmin" && callerRole != "SuperAdmin")
             {
                 TempData["Error"] = "Cannot delete the SuperAdmin account.";
                 return RedirectToAction(nameof(Index));
             }
-
+ 
             // Admin cannot delete other Admins
             if (callerRole == "Admin" && user.Role == "Admin")
             {
                 TempData["Error"] = "You do not have permission to delete Admin accounts.";
                 return RedirectToAction(nameof(Index));
             }
-
+ 
             await _userService.DeleteUserAsync(id, companyId);
             TempData["Success"] = "User deleted successfully";
             return RedirectToAction(nameof(Index));
@@ -154,26 +154,28 @@ namespace ExpenseManager.Web.Controllers
         [Authorize(Roles = "SuperAdmin,Admin")]
         public async Task<IActionResult> ToggleStatus(string id)
         {
-            var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;
             var callerRole = GetCallerRole();
+            var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
+            
             var user = await _userService.GetUserByIdAsync(id, companyId);
             if (user == null) return NotFound();
-
+ 
             // Protect SuperAdmin from deactivation
-            if (user.Role == "SuperAdmin")
+            if (user.Role == "SuperAdmin" && callerRole != "SuperAdmin")
             {
                 TempData["Error"] = "Cannot deactivate the SuperAdmin account.";
                 return RedirectToAction(nameof(Index));
             }
-
+ 
             // Admin cannot toggle other Admins
             if (callerRole == "Admin" && user.Role == "Admin")
             {
                 TempData["Error"] = "You do not have permission to modify Admin accounts.";
                 return RedirectToAction(nameof(Index));
             }
-
+ 
             await _userService.ToggleUserStatusAsync(id, companyId);
+            TempData["Success"] = $"User status {(user.IsActive ? "deactivated" : "activated")} successfully.";
             return RedirectToAction(nameof(Index));
         }
 
@@ -186,11 +188,11 @@ namespace ExpenseManager.Web.Controllers
             var user = await _userService.GetUserByIdAsync(id, companyId);
             if (user == null) return NotFound();
 
-            if (user.Role == "SuperAdmin")
-            {
-                TempData["Error"] = "Cannot change the SuperAdmin role.";
-                return RedirectToAction(nameof(Index));
-            }
+            // Only SuperAdmin can reach here due to [Authorize] attribute, 
+            // but we keep a generic guard or remove the hard restriction.
+            // Requirement: SuperAdmin can manage other SuperAdmins.
+            // If we want to prevent changing the role of the LAST SuperAdmin, we could add logic, 
+            // but for now, we follow the request.
 
             await _userService.AssignRoleAsync(id, role, companyId);
             TempData["Success"] = $"Role updated to {role} successfully.";

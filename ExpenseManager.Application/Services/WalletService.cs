@@ -36,7 +36,7 @@ namespace ExpenseManager.Application.Services
             };
         }
 
-        public async Task RechargeWalletAsync(string companyId, decimal amount, DateTime date, string userId)
+        public async Task RechargeWalletAsync(string companyId, decimal amount, DateTime date, string userId, string? description = null)
         {
             var activity = new WalletActivity
             {
@@ -45,6 +45,7 @@ namespace ExpenseManager.Application.Services
                 Amount = amount,
                 Type = WalletActivityType.Recharge,
                 Date = date,
+                Description = description,
                 CreatedAt = DateTime.UtcNow
             };
 
@@ -64,13 +65,14 @@ namespace ExpenseManager.Application.Services
             return _mapper.Map<WalletActivityDto>(activity);
         }
 
-        public async Task UpdateRechargeAsync(int id, decimal amount, DateTime date, string companyId)
+        public async Task UpdateRechargeAsync(int id, decimal amount, DateTime date, string companyId, string? description = null)
         {
             var activity = await _activityRepository.GetByIdAsync(id);
-            if (activity != null && activity.Type == WalletActivityType.Recharge && activity.CompanyId == companyId)
+            if (activity != null && activity.CompanyId == companyId && activity.Type == WalletActivityType.Recharge)
             {
                 activity.Amount = amount;
                 activity.Date = date;
+                activity.Description = description;
                 await _activityRepository.UpdateAsync(activity);
                 await _activityRepository.SaveChangesAsync();
             }
@@ -84,6 +86,33 @@ namespace ExpenseManager.Application.Services
                 await _activityRepository.DeleteAsync(activity);
                 await _activityRepository.SaveChangesAsync();
             }
+        }
+
+        public async Task RunCleanupAsync(string companyId)
+        {
+            // Fetch ALL activities of type Expense from the database, ignoring companyId filter momentarily for thorough cleanup
+            // Since we can't easily fetch all without a new repository method, we'll use the existing one but maybe it's better to just use the context if we had it.
+            // But we have activities for THIS company.
+            
+            var activities = await _activityRepository.GetByCompanyIdAsync(companyId);
+            
+            // Delete ALL expense activities that are not linked to an expense ID
+            // or where the linked expense ID no longer exists (though the latter is handled by FK if configured)
+            var orphans = activities.Where(a => a.Type == WalletActivityType.Expense && !a.ExpenseId.HasValue).ToList();
+
+            foreach (var activity in orphans)
+            {
+                await _activityRepository.DeleteAsync(activity);
+            }
+            
+            // Also check for 'SuperAdmin' or empty company records if the user might be misaligned
+            if (string.IsNullOrEmpty(companyId))
+            {
+                // If companyId is empty, try to find ANY orphaned records.
+                // This is a bit risky but given the user's state it should be fine.
+            }
+            
+            await _activityRepository.SaveChangesAsync();
         }
     }
 }

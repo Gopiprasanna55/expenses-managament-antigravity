@@ -99,6 +99,7 @@ builder.Services.AddAuthentication()
                 // Add local claims to the principal that will be persisted in the cookie
                 var claims = new List<Claim>
                 {
+                    new Claim("LocalUserId", user.Id),
                     new Claim("FullName", user.FullName ?? name),
                     new Claim(ClaimTypes.Role, (await userManager.GetRolesAsync(user)).FirstOrDefault() ?? "User")
                 };
@@ -199,6 +200,43 @@ using (var scope = app.Services.CreateScope())
     }
 }
 
+using (var scope = app.Services.CreateScope())
+{
+    var context = scope.ServiceProvider.GetRequiredService<ExpenseManager.Infrastructure.Data.ApplicationDbContext>();
+    try
+    {
+        Console.WriteLine("\n=== PER-COMPANY DIAGNOSTICS ===");
+        var companies = context.WalletActivities.Select(w => w.CompanyId).Distinct().ToList();
+        
+        foreach (var cid in companies)
+        {
+            var recharges = context.WalletActivities
+                .Where(w => w.CompanyId == cid && w.Type == ExpenseManager.Domain.Enums.WalletActivityType.Recharge)
+                .Select(w => w.Amount).ToList().Sum();
+                
+            var expenses = context.WalletActivities
+                .Where(w => w.CompanyId == cid && w.Type == ExpenseManager.Domain.Enums.WalletActivityType.Expense)
+                .Select(w => w.Amount).ToList().Sum();
+                
+            var tableExpenses = context.Expenses
+                .Where(e => e.CompanyId == cid)
+                .Select(e => e.Amount).ToList().Sum();
+                
+            Console.WriteLine($"Company ID: {cid}");
+            Console.WriteLine($"  Total Recharges: {recharges}");
+            Console.WriteLine($"  Total Expenses (Wallet): {expenses}");
+            Console.WriteLine($"  Total Expenses (Table): {tableExpenses}");
+            Console.WriteLine($"  Balance (Recharges - Expenses): {recharges - expenses}");
+            Console.WriteLine("-------------------------------");
+        }
+        Console.WriteLine("===============================\n");
+    }
+    catch (Exception ex)
+    {
+        Console.WriteLine($"Error during diagnostics: {ex.Message}");
+    }
+}
+
 app.Run();
 
 async Task SeedData(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext context)
@@ -212,91 +250,6 @@ async Task SeedData(UserManager<ApplicationUser> userManager, RoleManager<Identi
     if (await roleManager.RoleExistsAsync("User"))
     {
         // Note: existing "User" role users should be reassigned manually
-    }
-
-    // SuperAdmin User — gopiprasanna@fdestech.com
-    var superAdminEmail = "gopiprasanna@fdestech.com";
-    var superAdminUser = await userManager.FindByEmailAsync(superAdminEmail);
-    if (superAdminUser == null)
-    {
-        superAdminUser = new ApplicationUser
-        {
-            UserName = superAdminEmail,
-            Email = superAdminEmail,
-            FullName = "Gopi Prasanna Anumala",
-            EmailConfirmed = true,
-            IsActive = true,
-            CompanyId = "FDES-TECH"
-        };
-        var result = await userManager.CreateAsync(superAdminUser, "SuperAdmin@123!");
-        if (result.Succeeded)
-        {
-            await userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
-
-            // Seed Initial Wallet for SuperAdmin
-            if (!context.Wallets.Any(w => w.UserId == superAdminUser.Id))
-            {
-                context.Wallets.Add(new ExpenseManager.Domain.Entities.Wallet
-                {
-                    UserId = superAdminUser.Id,
-                    CompanyId = "FDES-TECH",
-                    TotalCreditLimit = 50000,
-                    CreatedAt = DateTime.UtcNow
-                });
-                await context.SaveChangesAsync();
-            }
-        }
-    }
-    else
-    {
-        // Ensure SuperAdmin role is assigned (upgrade from old Admin role)
-        var currentRoles = await userManager.GetRolesAsync(superAdminUser);
-        if (!currentRoles.Contains("SuperAdmin"))
-        {
-            // Remove old roles
-            await userManager.RemoveFromRolesAsync(superAdminUser, currentRoles);
-            await userManager.AddToRoleAsync(superAdminUser, "SuperAdmin");
-        }
-    }
-
-    // Admin User — admin@expense.com (keep as Admin tier)
-    var adminEmail = "admin@expense.com";
-    var adminUser = await userManager.FindByEmailAsync(adminEmail);
-    if (adminUser == null)
-    {
-        adminUser = new ApplicationUser
-        {
-            UserName = adminEmail,
-            Email = adminEmail,
-            FullName = "Admin Account",
-            EmailConfirmed = true,
-            IsActive = true,
-            CompanyId = "FDES-TECH"
-        };
-        await userManager.CreateAsync(adminUser, "Admin@123");
-        await userManager.AddToRoleAsync(adminUser, "Admin");
-
-        // Seed Initial Wallet for Admin
-        if (!context.Wallets.Any(w => w.UserId == adminUser.Id))
-        {
-            context.Wallets.Add(new ExpenseManager.Domain.Entities.Wallet
-            {
-                UserId = adminUser.Id,
-                CompanyId = "FDES-TECH",
-                TotalCreditLimit = 30000,
-                CreatedAt = DateTime.UtcNow
-            });
-            await context.SaveChangesAsync();
-        }
-    }
-    else
-    {
-        if (!await userManager.IsInRoleAsync(adminUser, "Admin"))
-        {
-            var currentRoles = await userManager.GetRolesAsync(adminUser);
-            await userManager.RemoveFromRolesAsync(adminUser, currentRoles);
-            await userManager.AddToRoleAsync(adminUser, "Admin");
-        }
     }
 
     // Seed Categories

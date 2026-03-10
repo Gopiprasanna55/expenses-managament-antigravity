@@ -1,10 +1,12 @@
 ﻿@using System.Security.Claims
+@using System.Web
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="utf-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>@ViewData["Title"] - ExpenseManager</title>
+    <link rel="favicon" type="image/png" href="https://fdestech.com/images/favicon.png">
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" />
     <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.10.0/font/bootstrap-icons.css" />
     <link rel="stylesheet" href="~/css/site.css" asp-append-version="true" />
@@ -121,8 +123,14 @@
                             <ul class="dropdown-menu dropdown-menu-end shadow border-0 mt-3 p-3" aria-labelledby="profileDropdown" style="width: 240px; border-radius: 12px;">
                                 <li class="mb-3">
                                     <div class="d-flex align-items-center gap-2">
-                                        <div class="profile-circle" style="width: 40px; height: 40px; flex-shrink: 0;">
-                                            @string.Join("", (User.FindFirst("FullName")?.Value ?? "U").Split(' ').Select(n => n.FirstOrDefault())).ToUpper()
+                                        <div class="profile-circle" >
+                                            <!-- @string.Join("", (User.FindFirst("FullName")?.Value ?? "U").Split(' ').Select(n => n.FirstOrDefault())).ToUpper() -->
+                                             @string.Concat(
+                                            (User.FindFirst("FullName")?.Value ?? "U")
+                                                .Split(' ', StringSplitOptions.RemoveEmptyEntries)
+                                                .Take(2)
+                                                .Select(n => n[0])
+                                        ).ToUpper()
                                         </div>
                                         <div class="overflow-hidden">
                                             <div class="fw-bold text-truncate" style="font-size: 0.95rem;" title="@User.FindFirst("FullName")?.Value">@User.FindFirst("FullName")?.Value</div>
@@ -147,14 +155,49 @@
             <main role="main" class="main-container">
                 @RenderBody()
             </main>
-        </div>
-    </div>
+        <div class="toast-container"></div>
 
     <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <script>
+        function showToast(message, type = 'success') {
+            const container = document.querySelector('.toast-container');
+            const toastId = 'toast-' + Date.now();
+            const bgClass = type === 'success' ? 'bg-success' : (type === 'error' || type === 'danger' ? 'bg-danger' : 'bg-primary');
+            
+            const toastHtml = `
+                <div id="${toastId}" class="toast hide" role="alert" aria-live="assertive" aria-atomic="true">
+                    <div class="d-flex align-items-center">
+                        <div class="flex-shrink-0 p-2 ps-3">
+                            <i class="bi ${type === 'success' ? 'bi-check-circle-fill text-success' : 'bi-exclamation-triangle-fill text-danger'} fs-5"></i>
+                        </div>
+                        <div class="toast-body flex-grow-1">
+                            ${message}
+                        </div>
+                        <button type="button" class="btn-close me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+                    </div>
+                </div>
+            `;
+            
+            container.insertAdjacentHTML('beforeend', toastHtml);
+            const toastEl = document.getElementById(toastId);
+            const toast = new bootstrap.Toast(toastEl, { autohide: true, delay: 3000 });
+            
+            toastEl.addEventListener('hidden.bs.toast', function () {
+                toastEl.remove();
+            });
+            
+            toast.show();
+        }
+
         document.addEventListener('DOMContentLoaded', function () {
-            // Sidebar toggle logic removed as per request
+            // Check for TempData messages
+            @if (TempData["Success"] != null) {
+                <text>showToast('@Html.Raw(HttpUtility.JavaScriptStringEncode(TempData["Success"]?.ToString()))', 'success');</text>
+            }
+            @if (TempData["Error"] != null) {
+                <text>showToast('@Html.Raw(HttpUtility.JavaScriptStringEncode(TempData["Error"]?.ToString()))', 'error');</text>
+            }
         });
     </script>
     @await RenderSectionAsync("Scripts", required: false)

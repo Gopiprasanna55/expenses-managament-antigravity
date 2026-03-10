@@ -41,14 +41,16 @@ namespace ExpenseManager.Infrastructure.Repositories
             return await _context.WalletActivities.FindAsync(id);
         }
 
-        public async Task UpdateAsync(WalletActivity activity)
+        public Task UpdateAsync(WalletActivity activity)
         {
             _context.WalletActivities.Update(activity);
+            return Task.CompletedTask;
         }
 
-        public async Task DeleteAsync(WalletActivity activity)
+        public Task DeleteAsync(WalletActivity activity)
         {
             _context.WalletActivities.Remove(activity);
+            return Task.CompletedTask;
         }
 
         public async Task SaveChangesAsync()

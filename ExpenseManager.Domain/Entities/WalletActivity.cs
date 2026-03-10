@@ -27,5 +27,12 @@ namespace ExpenseManager.Domain.Entities
 
         [Required]
         public string CompanyId { get; set; } = string.Empty;
+        
+        public int? ExpenseId { get; set; }
+
+        [ForeignKey("ExpenseId")]
+        public virtual Expense? Expense { get; set; }
+
+        public string? Description { get; set; }
     }
 }

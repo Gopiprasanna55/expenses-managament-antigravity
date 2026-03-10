@@ -9,6 +9,7 @@ namespace ExpenseManager.Domain.Interfaces
         Task<IEnumerable<Category>> GetActiveAsync(string companyId);
         Task AddAsync(Category category);
         Task UpdateAsync(Category category);
+        Task DeleteAsync(int id);
         Task SaveChangesAsync();
     }
 }

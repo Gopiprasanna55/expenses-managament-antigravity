@@ -10,5 +10,6 @@ namespace ExpenseManager.Application.Interfaces
         Task<int> CreateCategoryAsync(CategoryDto categoryDto);
         Task UpdateCategoryAsync(CategoryDto categoryDto);
         Task ToggleCategoryStatusAsync(int id, string companyId);
+        Task DeleteCategoryAsync(int id, string companyId);
     }
 }

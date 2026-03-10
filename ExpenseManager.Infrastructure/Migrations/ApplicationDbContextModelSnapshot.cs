@@ -166,6 +166,9 @@ namespace ExpenseManager.Infrastructure.Migrations
                         .IsRequired()
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("VendorName")
+                        .HasColumnType("TEXT");
+
                     b.HasKey("Id");
 
                     b.HasIndex("CategoryId");
@@ -184,7 +187,6 @@ namespace ExpenseManager.Infrastructure.Migrations
                         .HasColumnType("INTEGER");
 
                     b.Property<string>("CompanyId")
-                        .IsRequired()
                         .HasColumnType("TEXT");
 
                     b.Property<DateTime>("CreatedAt")
@@ -225,6 +227,12 @@ namespace ExpenseManager.Infrastructure.Migrations
                     b.Property<DateTime>("Date")
                         .HasColumnType("TEXT");
 
+                    b.Property<string>("Description")
+                        .HasColumnType("TEXT");
+
+                    b.Property<int?>("ExpenseId")
+                        .HasColumnType("INTEGER");
+
                     b.Property<int>("Type")
                         .HasColumnType("INTEGER");
 
@@ -235,6 +243,8 @@ namespace ExpenseManager.Infrastructure.Migrations
                     b.HasKey("Id");
 
                     b.HasIndex("CompanyId");
+
+                    b.HasIndex("ExpenseId");
 
                     b.HasIndex("UserId");
 
@@ -401,11 +411,17 @@ namespace ExpenseManager.Infrastructure.Migrations
 
             modelBuilder.Entity("ExpenseManager.Domain.Entities.WalletActivity", b =>
                 {
+                    b.HasOne("ExpenseManager.Domain.Entities.Expense", "Expense")
+                        .WithMany()
+                        .HasForeignKey("ExpenseId");
+
                     b.HasOne("ExpenseManager.Domain.Entities.ApplicationUser", "User")
                         .WithMany()
                         .HasForeignKey("UserId")
                         .OnDelete(DeleteBehavior.Cascade)
                         .IsRequired();
+
+                    b.Navigation("Expense");
 
                     b.Navigation("User");
                 });

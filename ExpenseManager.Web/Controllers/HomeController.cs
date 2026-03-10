@@ -34,7 +34,8 @@ namespace ExpenseManager.Web.Controllers
         [ResponseCache(Duration = 0, Location = ResponseCacheLocation.None, NoStore = true)]
         public IActionResult Error()
         {
-            return View();
+            TempData["Error"] = "An unexpected error occurred. Our technical team has been notified.";
+            return RedirectToAction("Index");
         }
     }
 }

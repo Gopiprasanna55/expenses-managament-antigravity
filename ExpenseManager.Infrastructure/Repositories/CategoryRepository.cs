@@ -40,6 +40,15 @@ namespace ExpenseManager.Infrastructure.Repositories
              await Task.CompletedTask;
         }
 
+        public async Task DeleteAsync(int id)
+        {
+            var category = await _context.Categories.FindAsync(id);
+            if (category != null)
+            {
+                _context.Categories.Remove(category);
+            }
+        }
+
         public async Task SaveChangesAsync()
         {
             await _context.SaveChangesAsync();

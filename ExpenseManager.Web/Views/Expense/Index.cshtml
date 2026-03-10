@@ -1,3 +1,4 @@
+@using System.Web
 @model IEnumerable<ExpenseManager.Application.DTOs.ExpenseDto>
 @{
     ViewData["Title"] = "All expense";
@@ -6,15 +7,20 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1">Expense History</h3>
+            <h3 class="fw-bold mb-0">Expense History</h3>
             <p class="text-muted small mb-0">Track and manage all your office expenditures</p>
         </div>
-        <a asp-action="Create" class="btn btn-teal d-flex align-items-center gap-2">
-            <i class="bi bi-plus-lg"></i> Add Expense
-        </a>
+        <div class="d-flex align-items-center gap-3">
+            <button id="bulkDeleteBtn" class="btn btn-outline-danger d-none d-flex align-items-center p-1" onclick="confirmBulkDelete()">
+                <i class="bi bi-trash pe-1"></i> Delete Selected(<span id="selectedCount">0</span>)
+            </button>
+            <a asp-action="Create" class="btn btn-teal d-flex align-items-center gap-2">
+                <i class="bi bi-plus-lg"></i> Add Expense
+            </a>
+        </div>
     </div>
 
-    <div class="custom-card mb-4">
+    <div class="custom-card mb-2">
         <div class="row g-3 align-items-center">
             <div class="col-md-3">
                 <div class="filter-input-group">
@@ -24,15 +30,18 @@
             </div>
             <div class="col-md-4">
                 <div class="filter-input-group">
-                    <i class="bi bi-calendar3 me-2"></i>
+                    <!-- <i class="bi bi-calendar3 me-2"></i> -->
+                    <!-- <label for="dateFrom">From </label> -->
+                     <span class="text-muted px-2">from</span>
                     <input type="date" id="dateFrom" title="From Date">
                     <span class="text-muted px-2">to</span>
+                    <!-- <label for="dateTo">To Date</label> -->
                     <input type="date" id="dateTo" title="To Date">
                 </div>
             </div>
             <div class="col-md-2">
-                <div class="filter-input-group">
-                    <i class="bi bi-tag me-2"></i>
+                <div class="filter-input-group p-0 m-0">
+                    <i class="bi bi-tag me-2 d-none"></i>
                     <select id="categoryFilter">
                         <option value="">All Categories</option>
                         @foreach (var cat in Model.Select(e => e.CategoryName).Distinct())
@@ -47,7 +56,7 @@
                     <a asp-action="ExportData" class="btn-icon-circle" title="Export Data">
                         <i class="bi bi-download"></i>
                     </a>
-                    <button class="btn-icon-circle" title="Advanced Filters">
+                    <button class="btn-icon-circle d-none" title="Advanced Filters">
                         <i class="bi bi-funnel"></i>
                     </button>
                 </div>
@@ -56,79 +65,127 @@
     </div>
 
     <div class="standard-table-container">
-        <table class="standard-table" id="expensesTable">
+        <div class="table-body-scroll-limit">
+            <table class="standard-table" id="expensesTable">
             <thead>
                 <tr>
-                    <th class="text-center" style="width: 80px;">S.NO</th>
-                    <th>EXPENSE DETAILS</th>
-                    <th>CATEGORY</th>
-                    <th class="text-end">AMOUNT</th>
-                    <th class="text-center">RECEIPT</th>
-                    <th class="text-end" style="width: 150px;">ACTIONS</th>
+                    <th class="text-center" style="width: 50px;">
+                        <div class="form-check d-flex justify-content-center">
+                            <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
+                        </div>
+                    </th>
+                    <th class="text-center" style="width: 80px;">s.no</th>
+                    <th>Expense Details</th>
+                     <th>Date</th>
+                    <th>category</th>
+                    <th class="">Amount</th>
+                    <th class="">Payment Method</th>
+                    <th class="">Vendor Name</th>
+                    <th class="text-center">receipt</th>
+                    <th class="text-end" style="width: 150px;">actions</th>
                 </tr>
             </thead>
             <tbody>
+                <tr id="noDataRow" style="display: none;">
+                    <td colspan="8" class="text-center py-5">
+                        <div class="text-muted">
+                            <i class="bi bi-inbox fs-1 d-block mb-3"></i>
+                            <h5 class="fw-bold">No data found</h5>
+                            <p class="small mb-0">No expenses match your current filters. Try adjusting your search or dates.</p>
+                        </div>
+                    </td>
+                </tr>
                 @foreach (var item in Model)
                 {
-                    <tr>
-                        <td class="text-center fw-medium text-muted"></td>
+                    <tr data-id="@item.Id">
+                        <td class="text-center">
+                            <div class="form-check d-flex justify-content-center">
+                                <input class="form-check-input item-checkbox" type="checkbox" value="@item.Id" onclick="updateSelection()">
+                            </div>
+                        </td>
+                        <td class="text-center fw-medium text-muted sno-cell"></td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
                                
                                 <div>
                                     <div class="fw-bold text-dark" style="text-transform: capitalize">@item.Title</div>
-                                    <small class="text-muted">@item.Date.ToString("dd MMM yyyy")</small>
-                                    <div class="d-none expense-description">@item.Description</div>
+                                    <!-- <small class="text-muted">@item.Date.ToString("dd MMM yyyy")</small> -->
+                                    <!-- <div class="d-none expense-description">@item.Description</div> -->
                                 </div>
                             </div>
-                            <div class="d-none">@item.Date.ToString("dd/MM/yyyy")</div> <!-- Hidden for script filtering -->
+                            <div class="d-none filter-date">@item.Date.ToString("dd/MM/yyyy")</div> <!-- Hidden for script filtering -->
                         </td>
+                        <td class="text-muted">@item.Date.ToString("dd MMM yyyy")</td>
                         <td>
                             <span class="badge-pill-standard badge-active">
                                 <span class="dot"></span>
                                 @item.CategoryName
                             </span>
                         </td>
-                        <td class="text-end fw-bold text-dark">₹@item.Amount.ToString("N2")</td>
+                        <td class="fw-bold text-dark">₹@(item.Amount?.ToString("N2") ?? "0.00")</td>
+                        <td class="text-muted">
+                           @if (string.IsNullOrEmpty(item.PaymentMethod))
+                                {
+                                    <span class="text-muted empty-payment-method">No Payment method</span>
+                                }
+                                else
+                                {
+                                    <span class="text-muted">@item.PaymentMethod</span>
+                                }
+                        </td>
+                        <td class="text-muted">@(string.IsNullOrEmpty(item.VendorName) ? "-" : item.VendorName)</td>
                         <td class="text-center">
                             @if (!string.IsNullOrEmpty(item.ReceiptPath))
                             {
                                 <button type="button" class="btn-icon-circle mx-auto" 
-                                        onclick="showReceiptPreview('@item.ReceiptPath')" 
+                                        onclick="showReceiptPreview('@Html.Raw(HttpUtility.JavaScriptStringEncode(item.ReceiptPath))')" 
                                         title="View Receipt">
                                     <i class="bi bi-file-earmark-image"></i>
                                 </button>
                             }
                             else
                             {
-                                <span class="text-muted small">N/A</span>
+                                <span class="text-muted small">No receipt</span>
                             }
                         </td>
                         <td class="text-end">
                             <div class="d-flex justify-content-end gap-2">
-                                <button type="button" class="btn-icon-circle text-primary" 
+                                <!-- <button type="button" class="btn-icon-circle text-primary" 
                                         onclick="viewExpenseDetails({ 
                                             id: '@item.Id', 
-                                            title: '@item.Title', 
-                                            description: '@(item.Description ?? "")',
+                                            title: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Title))', 
+                                            description: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Description ?? ""))',
                                             amount: '@item.Amount', 
-                                            date: '@item.Date.ToString("dd MMM yyyy")', 
-                                            category: '@item.CategoryName', 
-                                            paymentMethod: '@(item.PaymentMethod ?? "N/A")',
-                                            receiptPath: '@item.ReceiptPath'
-                                        })">
+                                            date: '@item.Date.ToString("yyyy-MM-dd")', 
+                                            category: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.CategoryName))', 
+                                            categoryId: '@item.CategoryId',
+                                            paymentMethod: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.PaymentMethod ?? "N/A"))',
+                                            receiptPath: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.ReceiptPath))'
+                                        })" title="View">
                                     <i class="bi bi-eye"></i>
+                                </button> -->
+                                <button type="button" class="btn-icon-circle" 
+                                        onclick="editExpense({ 
+                                            id: '@item.Id', 
+                                            title: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Title))', 
+                                            amount: '@item.Amount', 
+                                            date: '@item.Date.ToString("yyyy-MM-dd")', 
+                                            categoryId: '@item.CategoryId', 
+                                            paymentMethod: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.PaymentMethod ?? ""))',
+                                            vendorName: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.VendorName ?? ""))'
+                                        })" title="Edit">
+                                    <i class="bi bi-pencil"></i>
                                 </button>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon-circle"><i class="bi bi-pencil"></i></a>
-                                <form asp-action="Delete" asp-route-id="@item.Id" method="post" onsubmit="return confirm('Are you sure?')" class="d-inline">
-                                    <button type="submit" class="btn-icon-circle text-danger"><i class="bi bi-trash"></i></button>
-                                </form>
+                                <button type="button" class="btn-icon-circle text-danger" onclick="confirmDeleteExpense('@item.Id')" title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+        </div>
         <div class="pagination-container rounded-bottom shadow-sm">
         <div class="small fw-medium text-muted" id="paginationInfo">
             Showing 1-10 of 100 entries
@@ -152,50 +209,85 @@
     
 </div>
 
-
+<!-- Enhanced Receipt Preview Modal -->
+<div class="modal fade" id="receiptModal" tabindex="-1">
+    <div class="modal-dialog modal-dialog-centered modal-xl">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 12px; overflow: hidden;">
+            <div class="modal-header bg-white border-bottom-1">
+                <h5 class="modal-title fw-bold">Receipt View</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-0 bg-light">
+                <div class="receipt-zoom-viewport" id="receiptViewport">
+                    <img id="receiptFullImage" src="" class="receipt-zoom-image" />
+                    <div class="zoom-controls">
+                        <button class="zoom-btn" onclick="zoomReceipt(0.2)" title="Zoom In">
+                            <i class="bi bi-plus-lg"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="zoomReceipt(-0.2)" title="Zoom Out">
+                            <i class="bi bi-dash-lg"></i>
+                        </button>
+                        <button class="zoom-btn" onclick="resetReceiptZoom()" title="Reset">
+                            <i class="bi bi-arrow-counterclockwise"></i>
+                        </button>
+                    </div>
+                </div>
+                <div id="pdfContainer" class="d-none">
+                    <iframe id="receiptFullPdf" src="" class="w-100" style="height: 80vh; border: none;"></iframe>
+                </div>
+            </div>
+            <div class="modal-footer bg-white border-top-1">
+                <a id="downloadFullReceipt" href="#" class="btn btn-primary px-4 shadow-sm" download style="background-color: #1e3a8a; border: none; border-radius: 8px;">
+                    <i class="bi bi-download me-2"></i> Download Receipt
+                </a>
+                <button type="button" class="btn btn-light px-4 border" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
 
 <!-- Expense Detail Modal -->
 <div class="modal fade" id="expenseDetailModal" tabindex="-1">
     <div class="modal-dialog modal-dialog-centered modal-lg">
-        <div class="modal-content border-0" style="border-radius: 12px;">
-            <div class="modal-header border-1 pb-2">
-                <h5 class="modal-title fw-bold">Expense Details</h5>
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Expense Details</h5>
                 <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
             </div>
-            <div class="modal-body p-4">
-                <div class="row g-4">
+            <div class="modal-body p-4" >
+                <div class="row g-4" style="font-size: 14px;">
                     <div class="col-md-6">
                         <div class="mb-3">
-                            <label class="small text-muted fw-bold">TITLE</label>
-                            <div id="detailTitle" class="fw-bold fs-5 text-dark" style="text-transform: capitalize;"></div>
+                            <label class="small text-muted fw-bold">Title</label>
+                            <div id="detailTitle" class="fw-bold  text-dark" style="text-transform: capitalize;"></div>
                         </div>
                         <div class="mb-3">
-                            <label class="small text-muted fw-bold">DESCRIPTION</label>
+                            <label class="small text-muted fw-bold">Description</label>
                             <div id="detailDescription" class="text-dark small"></div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="small text-muted fw-bold">AMOUNT</label>
-                                <div id="detailAmount" class="fw-bold text-primary fs-5"></div>
+                                <label class="small text-muted fw-bold">Amount</label>
+                                <div id="detailAmount" class="fw-bold text-primary"></div>
                             </div>
                             <div class="col-6">
-                                <label class="small text-muted fw-bold">DATE</label>
+                                <label class="small text-muted fw-bold">Date</label>
                                 <div id="detailDate"></div>
                             </div>
                         </div>
                         <div class="row mb-3">
                             <div class="col-6">
-                                <label class="small text-muted fw-bold">CATEGORY</label>
+                                <label class="small text-muted fw-bold">Category</label>
                                 <div><span id="detailCategory" class="badge-category"></span></div>
                             </div>
                             <div class="col-6">
-                                <label class="small text-muted fw-bold">PAYMENT METHOD</label>
+                                <label class="small text-muted fw-bold">Payment Method</label>
                                 <div id="detailPaymentMethod"></div>
                             </div>
                         </div>
                     </div>
                     <div class="col-md-6 border-start">
-                        <label class="small text-muted fw-bold mb-2">RECEIPT PREVIEW</label>
+                        <label class="small text-muted fw-bold mb-2">Receipt Preview</label>
                         <div id="receiptPreviewContainer" class="text-center bg-light rounded-3 p-3 overflow-hidden" style="min-height: 200px; display: flex; align-items: center; justify-content: center;">
                             <span id="noReceiptMsg" class="text-muted small">No receipt uploaded</span>
                             <img id="receiptImg" src="" class="img-fluid d-none" style="max-height: 250px;" />
@@ -207,14 +299,122 @@
                     </div>
                 </div>
             </div>
-            <div class="modal-footer border-1 pt-2">
+            <div class="modal-footer modal-footer-custom">
                 <div class="me-auto">
-                    <a id="editLink" href="#" class="btn btn-outline-secondary btn-sm"><i class="bi bi-pencil"></i> Edit</a>
+                    <button id="editLink" type="button" class="btn btn-modal-secondary btn-sm px-3"><i class="bi bi-pencil me-1"></i> Edit</button>
                     <form id="deleteForm" method="post" class="d-inline ms-1">
-                        <button type="submit" class="btn btn-outline-danger btn-sm" onclick="return confirm('Are you sure you want to delete this expense?')"><i class="bi bi-trash"></i> Delete</button>
+                        <button type="submit" class="btn btn-modal-danger btn-sm px-3"><i class="bi bi-trash me-1"></i> Delete</button>
                     </form>
                 </div>
-                <button type="button" class="btn btn-secondary px-4" data-bs-dismiss="modal">Close</button>
+                <button type="button" class="btn btn-modal-secondary px-4" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Edit Expense Modal -->
+<div class="modal fade" id="editExpenseModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Edit Expense</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editExpenseForm" asp-action="Edit" method="post" enctype="multipart/form-data">
+                <input type="hidden" name="Id" id="editId" />
+                <div class="modal-body px-4 py-2">
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">DATE</label>
+                            <input type="date" name="Date" id="editDate" class="form-control form-control-custom" required />
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">AMOUNT (₹)</label>
+                            <input type="number" step="0.01" name="Amount" id="editAmount" class="form-control form-control-custom" required />
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">DESCRIPTION</label>
+                        <input type="text" name="Title" id="editTitle" class="form-control form-control-custom" required />
+                    </div>
+                    <div class="row g-3 mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">CATEGORY</label>
+                            <select name="CategoryId" id="editCategoryId" class="form-select form-control-custom" required>
+                                @foreach (var cat in (IEnumerable<SelectListItem>)ViewBag.CategoriesList)
+                                {
+                                    <option value="@cat.Value">@cat.Text</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label small fw-bold text-muted">PAYMENT METHOD</label>
+                            <select name="PaymentMethod" id="editPaymentMethod" class="form-select form-control-custom">
+                                <option value="">Select Method</option>
+                                <option value="Cash">Cash</option>
+                                <option value="Credit Card">Credit Card</option>
+                                <option value="Debit Card">Debit Card</option>
+                                <option value="UPI">UPI</option>
+                                <option value="Net Banking">Net Banking</option>
+                                <option value="Wallet">Wallet</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">VENDOR (OPTIONAL)</label>
+                        <input type="text" name="VendorName" id="editVendorName" class="form-control form-control-custom" placeholder="Enter vendor name" />
+                    </div>
+                    <div class="mb-0">
+                        <label class="form-label small fw-bold text-muted">RECEIPT (OPTIONAL)</label>
+                        <input type="file" name="ReceiptFile" class="form-control form-control-custom" accept=".png,.jpg,.jpeg,.pdf" />
+                        <small class="text-muted">Leave empty to keep current receipt</small>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-modal-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-modal-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Confirmation Modal -->
+<div class="modal fade" id="deleteExpenseModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="deleteExpenseForm" asp-action="Delete" method="post">
+                <input type="hidden" name="id" id="deleteId" />
+                <div class="modal-body p-4">
+                    <p class="mb-0">Are you sure you want to delete this expense? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-modal-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-modal-danger px-4">Delete Permanently</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Bulk Delete Confirmation Modal -->
+<div class="modal fade" id="bulkDeleteModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Confirm Bulk Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body p-4">
+                <p class="mb-0">Are you sure you want to delete <span id="bulkDeleteCount" class="fw-bold"></span> expenses? This action cannot be undone.</p>
+            </div>
+            <div class="modal-footer modal-footer-custom">
+                <button type="button" class="btn btn-modal-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-modal-danger px-4" onclick="executeBulkDelete()">Delete Permanently</button>
             </div>
         </div>
     </div>
@@ -223,9 +423,85 @@
 @section Scripts {
     <script>
         const expenseModal = new bootstrap.Modal(document.getElementById('expenseDetailModal'));
-        let rowsPerPage = 1;
+        const editModal = new bootstrap.Modal(document.getElementById('editExpenseModal'));
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteExpenseModal'));
+        const bulkDeleteModal = new bootstrap.Modal(document.getElementById('bulkDeleteModal'));
+        let rowsPerPage = 10;
         let currentPage = 1;
         let filteredRows = [];
+        let selectedIds = [];
+
+        // Receipt Preview logic
+        const receiptModalInstance = new bootstrap.Modal(document.getElementById('receiptModal'));
+        let currentScale = 1;
+        let isDragging = false;
+        let startX, startY, moveX = 0, moveY = 0;
+        const receiptFullImg = document.getElementById('receiptFullImage');
+        const receiptViewport = document.getElementById('receiptViewport');
+
+        function showReceiptPreview(path) {
+            const isPdf = path.toLowerCase().endsWith('.pdf');
+            const pdfContainer = document.getElementById('pdfContainer');
+            const downloadBtn = document.getElementById('downloadFullReceipt');
+            
+            downloadBtn.href = path;
+
+            if (isPdf) {
+                receiptViewport.classList.add('d-none');
+                pdfContainer.classList.remove('d-none');
+                document.getElementById('receiptFullPdf').src = path;
+            } else {
+                receiptViewport.classList.remove('d-none');
+                pdfContainer.classList.add('d-none');
+                receiptFullImg.src = path;
+                resetReceiptZoom();
+            }
+            receiptModalInstance.show();
+        }
+
+        function zoomReceipt(delta) {
+            currentScale = Math.max(0.5, Math.min(5, currentScale + delta));
+            updateReceiptTransform();
+        }
+
+        function resetReceiptZoom() {
+            currentScale = 1;
+            moveX = 0;
+            moveY = 0;
+            updateReceiptTransform();
+        }
+
+        function updateReceiptTransform() {
+            receiptFullImg.style.transform = `translate(calc(-50% + ${moveX}px), calc(-50% + ${moveY}px)) scale(${currentScale})`;
+        }
+
+        // Pan logic
+        receiptViewport.addEventListener('mousedown', (e) => {
+            if (currentScale > 1) {
+                isDragging = true;
+                startX = e.pageX - moveX;
+                startY = e.pageY - moveY;
+            }
+        });
+
+        window.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            moveX = e.pageX - startX;
+            moveY = e.pageY - startY;
+            updateReceiptTransform();
+        });
+
+        window.addEventListener('mouseup', () => {
+            isDragging = false;
+        });
+
+        // Mouse wheel zoom
+        receiptViewport.addEventListener('wheel', (e) => {
+            e.preventDefault();
+            const delta = e.deltaY > 0 ? -0.1 : 0.1;
+            zoomReceipt(delta);
+        });
 
         function viewExpenseDetails(data) {
             console.log("Viewing expense:", data);
@@ -246,8 +522,23 @@
             document.getElementById('detailCategory').textContent = category;
             document.getElementById('detailPaymentMethod').textContent = paymentMethod;
  
-            document.getElementById('editLink').href = '/Expense/Edit/' + id;
-            document.getElementById('deleteForm').action = '/Expense/Delete/' + id;
+            document.getElementById('editLink').onclick = function() {
+                expenseModal.hide();
+                editExpense({
+                    id: id,
+                    title: title,
+                    amount: amount,
+                    date: date,
+                    categoryId: data.categoryId,
+                    paymentMethod: paymentMethod === 'N/A' ? '' : paymentMethod
+                });
+            };
+            document.getElementById('deleteForm').onsubmit = function(e) {
+                e.preventDefault();
+                expenseModal.hide();
+                confirmDeleteExpense(id);
+                return false;
+            };
 
             const previewContainer = document.getElementById('receiptPreviewContainer');
             const noReceiptMsg = document.getElementById('noReceiptMsg');
@@ -276,6 +567,22 @@
             expenseModal.show();
         }
 
+        function editExpense(data) {
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editTitle').value = data.title;
+            document.getElementById('editAmount').value = data.amount;
+            document.getElementById('editDate').value = data.date;
+            document.getElementById('editCategoryId').value = data.categoryId;
+            document.getElementById('editPaymentMethod').value = data.paymentMethod;
+            document.getElementById('editVendorName').value = data.vendorName;
+            editModal.show();
+        }
+
+        function confirmDeleteExpense(id) {
+            document.getElementById('deleteId').value = id;
+            deleteModal.show();
+        }
+
         document.getElementById('searchInput').addEventListener('keyup', () => { currentPage = 1; filterTable(); });
         document.getElementById('categoryFilter').addEventListener('change', () => { currentPage = 1; filterTable(); });
         document.getElementById('dateFrom').addEventListener('change', () => { currentPage = 1; filterTable(); });
@@ -293,26 +600,34 @@
             const toDateStr = document.getElementById('dateTo').value;
             
             const fromDate = fromDateStr ? new Date(fromDateStr) : null;
-            const toDate = toDateStr ? new Date(toDateStr).setHours(23, 59, 59, 999) : null;
+            if (fromDate) fromDate.setHours(0,0,0,0);
+            
+            const toDate = toDateStr ? new Date(toDateStr) : null;
+            if (toDate) toDate.setHours(23, 59, 59, 999);
 
-            const allRows = Array.from(document.querySelectorAll('#expensesTable tbody tr'));
+            const allRows = Array.from(document.querySelectorAll('#expensesTable tbody tr:not(#noDataRow)'));
             
             filteredRows = allRows.filter(row => {
-                // Adjusting for new table structure:
-                // Column 1 is Details (Title + Hidden Date)
-                // Column 2 is Category
-                const detailsContainer = row.cells[1];
-                const title = detailsContainer.querySelector('.fw-bold').textContent.toLowerCase();
-                const dateText = detailsContainer.querySelector('.d-none').textContent.trim(); // dd/mm/yyyy
-                const cat = row.cells[2].textContent.toLowerCase();
+                const detailsContainer = row.cells[2];
+                const title = detailsContainer.querySelector('.fw-bold').textContent.toLowerCase().trim();
+                const dateText = detailsContainer.querySelector('.filter-date').textContent.trim(); // dd/MM/yyyy
+                const cat = row.cells[4].textContent.toLowerCase().trim();
                 
                 const dateParts = dateText.split('/');
                 const rowDate = new Date(dateParts[2], dateParts[1] - 1, dateParts[0]);
 
-                const matchesSearch = title.includes(search);
+                const matchesSearch = title.includes(search) || cat.includes(search);
                 const matchesCategory = category === "" || cat.includes(category);
-                const matchesFrom = !fromDate || rowDate >= fromDate;
-                const matchesTo = !toDate || rowDate <= toDate;
+                
+                let matchesFrom = true;
+                if (fromDate) {
+                    matchesFrom = rowDate >= fromDate;
+                }
+                
+                let matchesTo = true;
+                if (toDate) {
+                    matchesTo = rowDate <= toDate;
+                }
 
                 return matchesSearch && matchesCategory && matchesFrom && matchesTo;
             });
@@ -358,6 +673,13 @@
             const startIdx = (currentPage - 1) * rowsPerPage + 1;
             const endIdx = Math.min(currentPage * rowsPerPage, filteredRows.length);
             document.getElementById('paginationInfo').textContent = `Showing ${filteredRows.length > 0 ? startIdx : 0}-${endIdx} of ${filteredRows.length} entries`;
+            
+            const paginationContainer = document.querySelector('.pagination-container');
+            if (filteredRows.length === 0) {
+                paginationContainer.style.display = 'none';
+            } else {
+                paginationContainer.style.display = 'flex';
+            }
         }
 
         // function renderVisibleRows() {
@@ -369,20 +691,27 @@
         //     });
         // }
         function renderVisibleRows() {
-    const start = (currentPage - 1) * rowsPerPage;
-    const end = start + rowsPerPage;
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+            const noDataRow = document.getElementById('noDataRow');
 
-    // ✅ First hide ALL rows
-    filteredRows.forEach(row => {
-        row.style.display = "none";
-    });
+            // First hide ALL filtered rows
+            filteredRows.forEach(row => {
+                row.style.display = "none";
+            });
 
-    // ✅ Then show only current page rows
-    filteredRows.slice(start, end).forEach((row, index) => {
-        row.cells[0].textContent = start + index + 1;
-        row.style.display = "";
-    });
-}
+            if (filteredRows.length === 0) {
+                noDataRow.style.display = "";
+            } else {
+                noDataRow.style.display = "none";
+                // Show only current page rows and assign serial numbers
+                filteredRows.slice(start, end).forEach((row, index) => {
+                    const snoCell = row.querySelector('.sno-cell');
+                    if (snoCell) snoCell.textContent = start + index + 1;
+                    row.style.display = "";
+                });
+            }
+        }
 
         // function goToPage(page) {
         //     currentPage = page;
@@ -400,6 +729,68 @@
     renderVisibleRows();
     updatePagination();
 }
+
+        // Bulk Selection Logic
+        function toggleSelectAll() {
+            const selectAll = document.getElementById('selectAllCheckbox');
+            const checkboxes = document.querySelectorAll('.item-checkbox');
+            const visibleRows = filteredRows.filter(row => row.style.display !== 'none');
+            
+            checkboxes.forEach(cb => {
+                const row = cb.closest('tr');
+                if (row.style.display !== 'none') {
+                    cb.checked = selectAll.checked;
+                }
+            });
+            updateSelection();
+        }
+
+        function updateSelection() {
+            const checkboxes = document.querySelectorAll('.item-checkbox:checked');
+            selectedIds = Array.from(checkboxes).map(cb => parseInt(cb.value));
+            
+            const bulkBtn = document.getElementById('bulkDeleteBtn');
+            const selectedCount = document.getElementById('selectedCount');
+            
+            if (selectedIds.length > 0) {
+                bulkBtn.classList.remove('d-none');
+                selectedCount.textContent = selectedIds.length;
+            } else {
+                bulkBtn.classList.add('d-none');
+            }
+            
+            // Update Select All checkbox state
+            const allVisibleCheckboxes = document.querySelectorAll('.item-checkbox');
+            const visibleCheckboxes = Array.from(allVisibleCheckboxes).filter(cb => cb.closest('tr').style.display !== 'none');
+            const allChecked = visibleCheckboxes.length > 0 && visibleCheckboxes.every(cb => cb.checked);
+            document.getElementById('selectAllCheckbox').checked = allChecked;
+        }
+
+        function confirmBulkDelete() {
+            document.getElementById('bulkDeleteCount').textContent = selectedIds.length;
+            bulkDeleteModal.show();
+        }
+
+        async function executeBulkDelete() {
+            try {
+                const response = await fetch('/Expense/BulkDelete', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(selectedIds)
+                });
+
+                if (response.ok) {
+                    location.reload();
+                } else {
+                    alert('Failed to delete expenses. Please try again.');
+                }
+            } catch (error) {
+                console.error('Error:', error);
+                alert('An error occurred. Please try again.');
+            }
+        }
 
         // Init
         filterTable();

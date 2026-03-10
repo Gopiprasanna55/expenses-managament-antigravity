@@ -33,11 +33,15 @@
             display: flex; align-items: center; justify-content: center;
             margin: 0 auto 0.5rem;
         }
-        .form-control { border-radius: 12px; padding: 0.75rem 1rem; border: 1px solid #e2e8f0; }
+        .form-control { border-radius: 8px; padding: 0.65rem 1.25rem; border: 1px solid #e2e8f0; }
         .form-control:focus { border-color: #1e293b; box-shadow: none; }
         .btn-primary { 
             background: #1e293b; border: none; border-radius: 12px; padding: 0.75rem 1rem; 
             font-weight: 600; width: 100%; transition: all 0.2s;
+        }
+        .btn:active{
+            background-color: #1e293b !important;
+            border-color: #1e293b !important;
         }
         .btn-primary:hover { background: #0f172a; transform: translateY(-1px); }
         .btn-microsoft {
@@ -52,8 +56,13 @@
         .divider:not(:empty)::before { margin-right: .75em; }
         .divider:not(:empty)::after { margin-left: .75em; }
         .auth-status-alert {
-            border-radius: 12px; padding: 14px 18px; font-size: 0.9rem;
-            display: flex; align-items: flex-start; gap: 12px; margin-bottom: 1.5rem;
+            border-radius: 12px; padding: 10px 14px; font-size: 0.9rem;
+            display: flex; align-items: center; gap: 10px; margin-bottom: 1rem;
+        }
+        .auth-status-alert ul {
+            list-style-type: none;
+            padding: 0;
+            margin: 0;
         }
         .alert-error { background: #fff1f2; border: 1px solid #fecdd3; color: #be123c; }
     </style>
@@ -91,7 +100,12 @@
                     <div class="d-flex justify-content-between align-items-center mb-1">
                         <label class="form-label small fw-semibold mb-0">Password</label>
                     </div>
-                    <input asp-for="Password" type="password" class="form-control" placeholder="Enter password" required />
+                    <div class="position-relative">
+                        <input asp-for="Password" type="password" class="form-control" id="passwordInput" placeholder="Enter password" required style="padding-right: 40px;" />
+                        <button type="button" id="passwordToggle" class="btn border-0 position-absolute end-0 top-50 translate-middle-y me-2" style="background: transparent; color: #94a3b8; padding: 0.25rem; z-index: 10;">
+                            <i class="bi bi-eye" id="toggleIcon"></i>
+                        </button>
+                    </div>
                 </div>
                 <div class="mb-4 d-flex align-items-center">
                     <input asp-for="RememberMe" type="checkbox" class="form-check-input me-2" id="rememberMe" />
@@ -114,5 +128,22 @@
             </a>
         </div>
     </div>
+
+    <script>
+        document.getElementById('passwordToggle').addEventListener('click', function() {
+            const passwordInput = document.getElementById('passwordInput');
+            const toggleIcon = document.getElementById('toggleIcon');
+            
+            if (passwordInput.type === 'password') {
+                passwordInput.type = 'text';
+                toggleIcon.classList.remove('bi-eye');
+                toggleIcon.classList.add('bi-eye-slash');
+            } else {
+                passwordInput.type = 'password';
+                toggleIcon.classList.remove('bi-eye-slash');
+                toggleIcon.classList.add('bi-eye');
+            }
+        });
+    </script>
 </body>
 </html>

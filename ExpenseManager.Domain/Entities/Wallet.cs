@@ -19,7 +19,6 @@ namespace ExpenseManager.Domain.Entities
 
         public DateTime CreatedAt { get; set; } = DateTime.UtcNow;
 
-        [Required]
-        public string CompanyId { get; set; } = string.Empty;
+        public string? CompanyId { get; set; }
     }
 }

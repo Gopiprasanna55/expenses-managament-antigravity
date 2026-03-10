@@ -21,7 +21,7 @@
                 </div>
                 <div class="col-md-6">
                     <label asp-for="Amount" class="form-label small fw-bold text-muted"><i class="bi bi-currency-rupee"></i> AMOUNT (₹)</label>
-                    <input asp-for="Amount" class="form-control form-control-custom" placeholder="0.00" />
+                    <input asp-for="Amount" class="form-control form-control-custom" placeholder="" />
                     <span asp-validation-for="Amount" class="text-danger small"></span>
                 </div>
             </div>
@@ -36,14 +36,16 @@
                 <div class="col-md-6">
                     <label asp-for="CategoryId" class="form-label small fw-bold text-muted"><i class="bi bi-tag"></i> CATEGORY</label>
                     <div class="position-relative">
-                        <select asp-for="CategoryId" class="form-select form-control-custom pe-5" asp-items="ViewBag.Categories">
+                        <select asp-for="CategoryId" id="categorySelect" class="form-select form-control-custom pe-5" asp-items="ViewBag.Categories" onchange="checkCategory(this)">
                             <option value="">Select Category</option>
+                            <option value="0">Other (Create New)</option>
                         </select>
                     </div>
                     <span asp-validation-for="CategoryId" class="text-danger small"></span>
                 </div>
                 <div class="col-md-6">
-                    <label asp-for="PaymentMethod" class="form-label small fw-bold text-muted"><i class="bi bi-credit-card"></i> PAYMENT METHOD</label>
+                    <label asp-for="PaymentMethod" class="form-label small fw-bold text-muted">
+                    <i class="bi bi-credit-card"></i> PAYMENT METHOD</label>
                     <select asp-for="PaymentMethod" class="form-select form-control-custom">
                         <option value="">Select Method</option>
                         <option value="Cash">Cash</option>
@@ -57,9 +59,16 @@
                 </div>
             </div>
 
+            <div id="newCategorySection" class="mb-4 d-none">
+                <label asp-for="NewCategoryName" class="form-label small fw-bold text-muted"><i class="bi bi-plus-circle"></i> NEW CATEGORY NAME</label>
+                <input asp-for="NewCategoryName" id="newCategoryInput" class="form-control form-control-custom" placeholder="Enter new category name" />
+                <span asp-validation-for="NewCategoryName" class="text-danger small"></span>
+            </div>
+
             <div class="mb-4">
-                <label class="form-label small fw-bold text-muted"><i class="bi bi-info-circle"></i> VENDOR (OPTIONAL)</label>
-                <input type="text" class="form-control form-control-custom" placeholder="Enter vendor name" />
+                <label asp-for="VendorName" class="form-label small fw-bold text-muted"><i class="bi bi-info-circle"></i> VENDOR (OPTIONAL)</label>
+                <input asp-for="VendorName" type="text" class="form-control form-control-custom" placeholder="Enter vendor name" />
+                <span asp-validation-for="VendorName" class="text-danger small"></span>
             </div>
 
             <div class="">
@@ -126,5 +135,25 @@
             content.classList.remove('d-none');
             feedback.classList.add('d-none');
         }
+
+        function checkCategory(select) {
+            const section = document.getElementById('newCategorySection');
+            const input = document.getElementById('newCategoryInput');
+            
+            if (select.value === '0') {
+                section.classList.remove('d-none');
+                input.setAttribute('required', 'required');
+            } else {
+                section.classList.add('d-none');
+                input.removeAttribute('required');
+                input.value = '';
+            }
+        }
+
+        // Run on page load
+        window.addEventListener('load', function() {
+            const select = document.getElementById('categorySelect');
+            if (select) checkCategory(select);
+        });
     </script>
 }

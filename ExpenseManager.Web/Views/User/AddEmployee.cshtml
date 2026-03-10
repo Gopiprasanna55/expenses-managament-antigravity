@@ -31,6 +31,7 @@
                         <select asp-for="Role" class="form-select form-control-custom">
                             @if (callerRole == "SuperAdmin")
                             {
+                                <option value="SuperAdmin">SuperAdmin</option>
                                 <option value="Admin">Admin</option>
                                 <option value="HR" selected>HR</option>
                             }

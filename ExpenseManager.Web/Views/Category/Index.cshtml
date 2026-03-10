@@ -1,3 +1,4 @@
+@using System.Web
 @model IEnumerable<ExpenseManager.Application.DTOs.CategoryDto>
 @{
     ViewData["Title"] = "Categories";
@@ -6,7 +7,7 @@
 <div class="container-fluid">
     <div class="d-flex justify-content-between align-items-center mb-4">
         <div>
-            <h3 class="fw-bold mb-1">Expense Categories</h3>
+            <h3 class="fw-bold mb-0">Expense Categories</h3>
             <p class="text-muted small mb-0">Organize and manage your expense types</p>
         </div>
         <a asp-action="Create" class="btn btn-teal d-flex align-items-center gap-2">
@@ -15,25 +16,26 @@
     </div>
 
     <div class="standard-table-container">
-        <table class="standard-table">
+        <div class="table-body-scroll-limit">
+            <table class="standard-table" id="categoriesTable">
             <thead>
                 <tr>
-                    <th>CATEGORY INFORMATION</th>
-                    <th>CREATED DATE</th>
-                    <th>STATUS</th>
-                    <th class="text-end" style="width: 150px;">ACTIONS</th>
+                    <th class="text-center" style="width: 80px;">S.No</th>
+                    <th>Category Information</th>
+                    <th>Created Date</th>
+                    <th>Status</th>
+                    <th class="text-end" style="width: 180px;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 @foreach (var item in Model)
                 {
-                    <tr>
+                    <tr style="cursor:pointer;" onclick="openCategoryExpenses('@item.Id', '@HttpUtility.JavaScriptStringEncode(item.Name)')">
+                        <td class="text-center fw-medium text-muted sno-cell"></td>
                         <td>
                             <div class="d-flex align-items-center gap-3">
-                                
                                 <div>
                                     <div class="fw-bold text-dark" style="text-transform: capitalize;">@item.Name</div>
-                                   
                                 </div>
                             </div>
                         </td>
@@ -44,19 +46,337 @@
                                 @(item.IsActive ? "Active" : "Inactive")
                             </span>
                         </td>
-                        <td class="text-end">
+                        <td class="text-end" onclick="event.stopPropagation()">
                             <div class="d-flex justify-content-end gap-2">
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon-circle" title="Edit">
-                                    <i class="bi bi-pencil"></i>
-                                </a>
-                                <a asp-action="Edit" asp-route-id="@item.Id" class="btn-icon-circle text-primary" title="View">
+                                <button type="button" class="btn-icon-circle text-primary"
+                                        onclick="openCategoryExpenses('@item.Id', '@HttpUtility.JavaScriptStringEncode(item.Name)')"
+                                        title="View Expenses">
                                     <i class="bi bi-eye"></i>
-                                </a>
+                                </button>
+                                <button type="button" class="btn-icon-circle" 
+                                        onclick="editCategory({ id: '@item.Id', name: '@HttpUtility.JavaScriptStringEncode(item.Name)', isActive: @(item.IsActive.ToString().ToLower()) })" 
+                                        title="Edit">
+                                    <i class="bi bi-pencil"></i>
+                                </button>
+                                <button type="button" class="btn-icon-circle text-danger" 
+                                        onclick="confirmDelete('@item.Id', '@HttpUtility.JavaScriptStringEncode(item.Name)')" 
+                                        title="Delete">
+                                    <i class="bi bi-trash"></i>
+                                </button>
                             </div>
                         </td>
                     </tr>
                 }
             </tbody>
         </table>
+        </div>
+        <div class="pagination-container rounded-bottom shadow-sm">
+            <div class="small fw-medium text-muted" id="paginationInfo">
+                Showing 1-10 of 100 entries
+            </div>
+            <div class="d-flex align-items-center gap-3">
+                <div class="d-flex align-items-center gap-2 me-4">
+                    <span class="small text-muted fw-medium">Rows per page:</span>
+                    <select id="pageSizeSelect" class="form-select form-select-sm border-0 bg-light" style="width: 70px; border-radius: 6px;">
+                        <option value="10" selected>10</option>
+                        <option value="20">20</option>
+                        <option value="50">50</option>
+                    </select>
+                </div>
+                <div class="d-flex gap-1" id="paginationControls">
+                </div>
+            </div>
+        </div>
     </div>
 </div>
+
+<!-- Right Sidebar Offcanvas -->
+<div class="offcanvas offcanvas-end shadow-lg" tabindex="-1" id="categoryExpensesSidebar" style="width: 480px;">
+    <div class="offcanvas-header border-bottom py-3 px-4" style="background: #1e3a8a;">
+        <div>
+            <h5 class="offcanvas-title fw-bold text-white mb-0" id="sidebarCategoryName">Category Expenses</h5>
+            <small class="text-white-50">Expenses under this category</small>
+        </div>
+        <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas"></button>
+    </div>
+
+    <!-- Date Filters -->
+    <div class="px-4 py-3 border-bottom bg-light">
+        <div class="row g-2 align-items-end">
+            <div class="col-5">
+                <label class="form-label small fw-bold text-muted mb-1">FROM DATE</label>
+                <input type="date" id="sidebarDateFrom" class="form-control form-control-sm form-control-custom" />
+            </div>
+            <div class="col-5">
+                <label class="form-label small fw-bold text-muted mb-1">TO DATE</label>
+                <input type="date" id="sidebarDateTo" class="form-control form-control-sm form-control-custom" />
+            </div>
+            <div class="col-2">
+                <button class="btn btn-sm btn-primary w-100" onclick="applySidebarFilter()" style="background:#1e3a8a; border:none; border-radius:8px;">
+                    <!-- <i class="bi bi-funnel-fill"></i> -->
+                    Apply
+                </button>
+            </div>
+        </div>
+        <button class="btn btn-link btn-sm text-muted p-0 mt-1" onclick="clearSidebarFilter()">
+            <i class="bi bi-x-circle me-1"></i>Clear filter
+        </button>
+    </div>
+
+    <!-- Total Amount Banner -->
+    <div id="sidebarTotalBanner" class="px-4 py-2 d-flex justify-content-between align-items-center" style="background: #f0f4ff; border-bottom: 1px solid #e2e8f0;">
+        <span class="small fw-bold text-muted">TOTAL SPENT</span>
+        <span id="sidebarTotalAmount" class="fw-bold" style="color:#1e3a8a;font-size:14px;">₹0.00</span>
+    </div>
+
+    <!-- Expense List -->
+    <div class="offcanvas-body p-0" style="overflow-y:auto;">
+        <div id="sidebarLoading" class="text-center py-5 d-none">
+            <div class="spinner-border text-primary" role="status"><span class="visually-hidden">Loading...</span></div>
+            <p class="text-muted small mt-2">Loading expenses...</p>
+        </div>
+        <div id="sidebarNoData" class="text-center py-5 d-none">
+            <i class="bi bi-inbox fs-1 text-muted d-block mb-2"></i>
+            <p class="text-muted fw-bold">No expenses found</p>
+            <small class="text-muted">Try adjusting the date filter.</small>
+        </div>
+        <div id="sidebarExpenseList" class="p-0"></div>
+    </div>
+</div>
+
+<!-- Sidebar Backdrop -->
+<div id="sidebarBackdrop" onclick="closeCategorySidebar()" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.35); z-index:1040;"></div>
+
+<!-- Edit Category Modal -->
+<div class="modal fade" id="editCategoryModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Edit Category</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form id="editCategoryForm" asp-action="Edit" method="post">
+                <input type="hidden" name="Id" id="editId" />
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label small fw-bold text-muted">CATEGORY NAME</label>
+                        <input type="text" name="Name" id="editName" class="form-control form-control-custom" required />
+                    </div>
+                    <div class="form-check form-switch mt-3">
+                        <input class="form-check-input" type="checkbox" name="IsActive" id="editIsActive" value="true">
+                        <label class="form-check-label small fw-bold text-muted" for="editIsActive">ACTIVE STATUS</label>
+                    </div>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-modal-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-modal-primary">Update</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+<!-- Delete Category Modal -->
+<div class="modal fade" id="deleteCategoryModal" tabindex="-1" data-bs-backdrop="static" data-bs-keyboard="false">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content modal-content-custom">
+            <div class="modal-header modal-header-custom">
+                <h5 class="modal-title modal-title-custom">Confirm Deletion</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <form asp-action="Delete" method="post">
+                <input type="hidden" name="id" id="deleteId" />
+                <div class="modal-body p-4">
+                    <p>Are you sure you want to delete the category "<span id="deleteNameDisplay" class="fw-bold"></span>"? This action cannot be undone.</p>
+                </div>
+                <div class="modal-footer modal-footer-custom">
+                    <button type="button" class="btn btn-modal-secondary" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-modal-danger">Delete Permanently</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        const editModal = new bootstrap.Modal(document.getElementById('editCategoryModal'));
+        const deleteModal = new bootstrap.Modal(document.getElementById('deleteCategoryModal'));
+        const categorySidebar = new bootstrap.Offcanvas(document.getElementById('categoryExpensesSidebar'));
+        let rowsPerPage = 10;
+        let currentPage = 1;
+        let allRows = [];
+        let activeCategoryId = null;
+
+        function initPagination() {
+            allRows = Array.from(document.querySelectorAll('#categoriesTable tbody tr'));
+            filterTable();
+        }
+
+        function filterTable() {
+            updatePagination();
+            renderVisibleRows();
+        }
+
+        function updatePagination() {
+            const totalPages = Math.ceil(allRows.length / rowsPerPage) || 1;
+            const controls = document.getElementById('paginationControls');
+            controls.innerHTML = '';
+
+            const prevBtn = document.createElement('button');
+            prevBtn.className = `page-btn ${currentPage === 1 ? 'disabled' : ''}`;
+            prevBtn.innerHTML = '<i class="bi bi-chevron-left"></i> Previous';
+            prevBtn.disabled = currentPage === 1;
+            prevBtn.onclick = () => goToPage(currentPage - 1);
+            controls.appendChild(prevBtn);
+
+            for (let i = 1; i <= totalPages; i++) {
+                const pageBtn = document.createElement('button');
+                pageBtn.className = `page-btn ${i === currentPage ? 'active' : ''}`;
+                pageBtn.textContent = i;
+                pageBtn.onclick = () => goToPage(i);
+                controls.appendChild(pageBtn);
+            }
+
+            const nextBtn = document.createElement('button');
+            nextBtn.className = `page-btn ${currentPage === totalPages ? 'disabled' : ''}`;
+            nextBtn.innerHTML = 'Next <i class="bi bi-chevron-right"></i>';
+            nextBtn.disabled = currentPage === totalPages;
+            nextBtn.onclick = () => goToPage(currentPage + 1);
+            controls.appendChild(nextBtn);
+
+            const startIdx = (currentPage - 1) * rowsPerPage + 1;
+            const endIdx = Math.min(currentPage * rowsPerPage, allRows.length);
+            document.getElementById('paginationInfo').textContent = `Showing ${allRows.length > 0 ? startIdx : 0}-${endIdx} of ${allRows.length} entries`;
+        }
+
+        function renderVisibleRows() {
+            const start = (currentPage - 1) * rowsPerPage;
+            const end = start + rowsPerPage;
+
+            allRows.forEach((row, index) => {
+                if (index >= start && index < end) {
+                    row.querySelector('.sno-cell').textContent = index + 1;
+                    row.style.display = "";
+                } else {
+                    row.style.display = "none";
+                }
+            });
+        }
+
+        function goToPage(page) {
+            const totalPages = Math.ceil(allRows.length / rowsPerPage) || 1;
+            if (page < 1 || page > totalPages) return;
+            currentPage = page;
+            renderVisibleRows();
+            updatePagination();
+        }
+
+        document.getElementById('pageSizeSelect').addEventListener('change', function() {
+            rowsPerPage = parseInt(this.value);
+            currentPage = 1;
+            filterTable();
+        });
+
+        function editCategory(data) {
+            document.getElementById('editId').value = data.id;
+            document.getElementById('editName').value = data.name;
+            document.getElementById('editIsActive').checked = data.isActive;
+            editModal.show();
+        }
+
+        function confirmDelete(id, name) {
+            document.getElementById('deleteId').value = id;
+            document.getElementById('deleteNameDisplay').textContent = name;
+            deleteModal.show();
+        }
+
+        // --- Right Sidebar Logic ---
+
+        function openCategoryExpenses(categoryId, categoryName) {
+            activeCategoryId = categoryId;
+            document.getElementById('sidebarCategoryName').textContent = categoryName + ' Expenses';
+            document.getElementById('sidebarDateFrom').value = '';
+            document.getElementById('sidebarDateTo').value = '';
+            showSidebar();
+            loadCategoryExpenses(categoryId, null, null);
+        }
+
+        function showSidebar() {
+            document.getElementById('sidebarBackdrop').style.display = 'block';
+            categorySidebar.show();
+        }
+
+        function closeCategorySidebar() {
+            document.getElementById('sidebarBackdrop').style.display = 'none';
+            categorySidebar.hide();
+        }
+
+        document.getElementById('categoryExpensesSidebar').addEventListener('hidden.bs.offcanvas', () => {
+            document.getElementById('sidebarBackdrop').style.display = 'none';
+        });
+
+        function applySidebarFilter() {
+            if (!activeCategoryId) return;
+            const from = document.getElementById('sidebarDateFrom').value || null;
+            const to = document.getElementById('sidebarDateTo').value || null;
+            loadCategoryExpenses(activeCategoryId, from, to);
+        }
+
+        function clearSidebarFilter() {
+            document.getElementById('sidebarDateFrom').value = '';
+            document.getElementById('sidebarDateTo').value = '';
+            if (activeCategoryId) loadCategoryExpenses(activeCategoryId, null, null);
+        }
+
+        async function loadCategoryExpenses(categoryId, from, to) {
+            document.getElementById('sidebarLoading').classList.remove('d-none');
+            document.getElementById('sidebarNoData').classList.add('d-none');
+            document.getElementById('sidebarExpenseList').innerHTML = '';
+
+            let url = `/Category/GetExpenses?categoryId=${categoryId}`;
+            if (from) url += `&from=${from}`;
+            if (to) url += `&to=${to}`;
+
+            try {
+                const res = await fetch(url);
+                const data = await res.json();
+                document.getElementById('sidebarLoading').classList.add('d-none');
+                document.getElementById('sidebarTotalAmount').textContent = '₹' + parseFloat(data.total).toLocaleString('en-IN', { minimumFractionDigits: 2 });
+
+                if (!data.expenses || data.expenses.length === 0) {
+                    document.getElementById('sidebarNoData').classList.remove('d-none');
+                    return;
+                }
+
+                const list = document.getElementById('sidebarExpenseList');
+                data.expenses.forEach((exp, i) => {
+                    const card = document.createElement('div');
+                    card.className = 'px-4 py-3 border-bottom';
+                    card.style.cssText = 'transition: background 0.15s; cursor:default;';
+                    card.onmouseover = () => card.style.background = '#f8faff';
+                    card.onmouseleave = () => card.style.background = '';
+                    card.innerHTML = `
+                        <div class="d-flex justify-content-between align-items-end">
+                            <div style="flex:1;">
+                                <div class="fw-bold text-dark small" style="text-transform:capitalize;">${exp.title}</div>
+                                ${exp.description ? `<div class="text-muted" style="font-size:12px;">${exp.description}</div>` : ''}
+                                <div class="d-flex gap-3 mt-1">
+                                    <span class="text-muted" style="font-size:11px;"><i class="bi bi-calendar3 me-1"></i>${exp.date}</span>
+                                    ${exp.paymentMethod ? `<span class="text-muted" style="font-size:11px;"><i class="bi bi-credit-card me-1"></i>${exp.paymentMethod}</span>` : ''}
+                                </div>
+                            </div>
+                            <div class="fw-bold ms-3" style="color:black; white-space:nowrap;font-size:12px;">₹${parseFloat(exp.amount).toLocaleString('en-IN', { minimumFractionDigits: 2 })}</div>
+                        </div>`;
+                    list.appendChild(card);
+                });
+            } catch (e) {
+                document.getElementById('sidebarLoading').classList.add('d-none');
+                document.getElementById('sidebarNoData').classList.remove('d-none');
+            }
+        }
+
+        initPagination();
+    </script>
+}
+
