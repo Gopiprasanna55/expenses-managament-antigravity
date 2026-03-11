@@ -32,9 +32,9 @@
                 <div class="filter-input-group">
                     <!-- <i class="bi bi-calendar3 me-2"></i> -->
                     <!-- <label for="dateFrom">From </label> -->
-                     <span class="text-muted px-2">from</span>
+                     <span class="text-muted px-1">from</span>
                     <input type="date" id="dateFrom" title="From Date">
-                    <span class="text-muted px-2">to</span>
+                    <span class="text-muted px-1">to</span>
                     <!-- <label for="dateTo">To Date</label> -->
                     <input type="date" id="dateTo" title="To Date">
                 </div>
@@ -52,7 +52,11 @@
                 </div>
             </div>
             <div class="col-md-3 text-end">
-                <div class="d-flex justify-content-end gap-2">
+                <div class="d-flex justify-content-end align-items-center gap-2">
+                    <div class="me-3 text-end">
+                        <div class="small fw-semibold text-muted mb-0" id="totalAmountLabel" style="font-size: 0.7rem; line-height: 1;">Page Total</div>
+                        <div class="fw-bold" style="font-size: 0.95rem; color: #1e3a8a; line-height: 1;" id="totalAmountValue">₹0.00</div>
+                    </div>
                     <a asp-action="ExportData" class="btn-icon-circle" title="Export Data">
                         <i class="bi bi-download"></i>
                     </a>
@@ -64,30 +68,31 @@
         </div>
     </div>
 
+
+
     <div class="standard-table-container">
         <div class="table-body-scroll-limit">
-            <table class="standard-table" id="expensesTable">
-            <thead>
+            <table class="standard-table" id="expensesTable" style="table-layout: fixed; width: 100%;">            <thead>
                 <tr>
-                    <th class="text-center" style="width: 50px;">
+                    <th class="text-center" style="width: 3%;">
                         <div class="form-check d-flex justify-content-center">
                             <input class="form-check-input" type="checkbox" id="selectAllCheckbox" onclick="toggleSelectAll()">
                         </div>
                     </th>
-                    <th class="text-center" style="width: 80px;">s.no</th>
-                    <th>Expense Details</th>
-                     <th>Date</th>
-                    <th>category</th>
-                    <th class="">Amount</th>
-                    <th class="">Payment Method</th>
-                    <th class="">Vendor Name</th>
-                    <th class="text-center">receipt</th>
-                    <th class="text-end" style="width: 150px;">actions</th>
+                    <th class="text-center" style="width: 4%;">S.No</th>
+                    <th style="width: 36%;">Expense Detail</th>
+                    <th style="width: 10%;">Date</th>
+                    <th style="width: 10%;">Category</th>
+                    <th style="width: 10%;">Amount</th>
+                    <th style="width: 7%;">Payment</th>
+                    <th style="width: 6%;">Vendor</th>
+                    <th class="text-center" style="width: 6%;">Receipt</th>
+                    <th class="text-end" style="width: 8%;">Actions</th>
                 </tr>
             </thead>
             <tbody>
                 <tr id="noDataRow" style="display: none;">
-                    <td colspan="8" class="text-center py-5">
+                    <td colspan="10" class="text-center py-5">
                         <div class="text-muted">
                             <i class="bi bi-inbox fs-1 d-block mb-3"></i>
                             <h5 class="fw-bold">No data found</h5>
@@ -97,7 +102,7 @@
                 </tr>
                 @foreach (var item in Model)
                 {
-                    <tr data-id="@item.Id">
+                    <tr data-id="@item.Id" data-amount="@(item.Amount?.ToString("F2", System.Globalization.CultureInfo.InvariantCulture) ?? "0")">
                         <td class="text-center">
                             <div class="form-check d-flex justify-content-center">
                                 <input class="form-check-input item-checkbox" type="checkbox" value="@item.Id" onclick="updateSelection()">
@@ -105,35 +110,29 @@
                         </td>
                         <td class="text-center fw-medium text-muted sno-cell"></td>
                         <td>
-                            <div class="d-flex align-items-center gap-3">
-                               
-                                <div>
-                                    <div class="fw-bold text-dark" style="text-transform: capitalize">@item.Title</div>
-                                    <!-- <small class="text-muted">@item.Date.ToString("dd MMM yyyy")</small> -->
-                                    <!-- <div class="d-none expense-description">@item.Description</div> -->
-                                </div>
-                            </div>
-                            <div class="d-none filter-date">@item.Date.ToString("dd/MM/yyyy")</div> <!-- Hidden for script filtering -->
+                            <div class="fw-bold text-dark text-truncate w-100" style="text-transform: capitalize;" data-bs-toggle="tooltip" title="@item.Title">@item.Title</div>
+                            <div class="d-none filter-date">@item.Date.ToString("dd/MM/yyyy")</div>
                         </td>
                         <td class="text-muted">@item.Date.ToString("dd MMM yyyy")</td>
                         <td>
-                            <span class="badge-pill-standard badge-active">
+                            <span class="badge-pill-standard badge-active d-inline-block text-truncate w-100" data-bs-toggle="tooltip" title="@item.CategoryName">
                                 <span class="dot"></span>
                                 @item.CategoryName
                             </span>
                         </td>
                         <td class="fw-bold text-dark">₹@(item.Amount?.ToString("N2") ?? "0.00")</td>
-                        <td class="text-muted">
-                           @if (string.IsNullOrEmpty(item.PaymentMethod))
-                                {
-                                    <span class="text-muted empty-payment-method">No Payment method</span>
-                                }
-                                else
-                                {
-                                    <span class="text-muted">@item.PaymentMethod</span>
-                                }
+                        <td>
+                            @{
+                                var payment = string.IsNullOrEmpty(item.PaymentMethod) ? "-" : item.PaymentMethod;
+                            }
+                            <span class="text-muted text-truncate d-block w-100" data-bs-toggle="tooltip" title="@payment">@payment</span>
                         </td>
-                        <td class="text-muted">@(string.IsNullOrEmpty(item.VendorName) ? "-" : item.VendorName)</td>
+                        <td>
+                            @{
+                                var vendor = string.IsNullOrEmpty(item.VendorName) ? "-" : item.VendorName;
+                            }
+                            <span class="text-muted text-truncate d-block w-100" data-bs-toggle="tooltip" title="@vendor">@vendor</span>
+                        </td>
                         <td class="text-center">
                             @if (!string.IsNullOrEmpty(item.ReceiptPath))
                             {
@@ -150,20 +149,6 @@
                         </td>
                         <td class="text-end">
                             <div class="d-flex justify-content-end gap-2">
-                                <!-- <button type="button" class="btn-icon-circle text-primary" 
-                                        onclick="viewExpenseDetails({ 
-                                            id: '@item.Id', 
-                                            title: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Title))', 
-                                            description: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.Description ?? ""))',
-                                            amount: '@item.Amount', 
-                                            date: '@item.Date.ToString("yyyy-MM-dd")', 
-                                            category: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.CategoryName))', 
-                                            categoryId: '@item.CategoryId',
-                                            paymentMethod: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.PaymentMethod ?? "N/A"))',
-                                            receiptPath: '@Html.Raw(HttpUtility.JavaScriptStringEncode(item.ReceiptPath))'
-                                        })" title="View">
-                                    <i class="bi bi-eye"></i>
-                                </button> -->
                                 <button type="button" class="btn-icon-circle" 
                                         onclick="editExpense({ 
                                             id: '@item.Id', 
@@ -193,10 +178,11 @@
         <div class="d-flex align-items-center gap-3">
             <div class="d-flex align-items-center gap-2 me-4">
                 <span class="small text-muted fw-medium">Rows per page:</span>
-                <select id="pageSizeSelect" class="form-select form-select-sm border-0 bg-light" style="width: 70px; border-radius: 6px;">
+                <select id="pageSizeSelect" class="form-select form-select-sm border-0 bg-light" style="width: 75px; border-radius: 6px;">
                     <option value="10" selected>10</option>
-                    <option value="20">20</option>
+                    <option value="25">25</option>
                     <option value="50">50</option>
+                    <option value="100">100</option>
                 </select>
             </div>
             <div class="d-flex gap-1" id="paginationControls">
@@ -593,6 +579,33 @@
             filterTable();
         });
 
+        // Check if any filter is currently active
+        function isFilterActive() {
+            const search = document.getElementById('searchInput').value.trim();
+            const category = document.getElementById('categoryFilter').value;
+            const fromDate = document.getElementById('dateFrom').value;
+            const toDate = document.getElementById('dateTo').value;
+            return search !== '' || category !== '' || fromDate !== '' || toDate !== '';
+        }
+
+        function updateTotalAmount() {
+            const label = document.getElementById('totalAmountLabel');
+            const valueEl = document.getElementById('totalAmountValue');
+
+            if (!isFilterActive()) {
+                // No filter: sum only the visible (current page) rows
+                const visibleRows = filteredRows.slice((currentPage - 1) * rowsPerPage, currentPage * rowsPerPage);
+                const pageTotal = visibleRows.reduce((sum, row) => sum + (parseFloat(row.dataset.amount) || 0), 0);
+                label.textContent = 'Page Total';
+                valueEl.textContent = '\u20b9' + pageTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            } else {
+                // Filter active: sum all filtered rows
+                const filteredTotal = filteredRows.reduce((sum, row) => sum + (parseFloat(row.dataset.amount) || 0), 0);
+                label.textContent = 'Filtered Total';
+                valueEl.textContent = '\u20b9' + filteredTotal.toLocaleString('en-IN', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+            }
+        }
+
         function filterTable() {
             const search = document.getElementById('searchInput').value.toLowerCase();
             const category = document.getElementById('categoryFilter').value.toLowerCase();
@@ -636,6 +649,7 @@
             
             updatePagination();
             renderVisibleRows();
+            updateTotalAmount();
         }
 
         function updatePagination() {
@@ -711,6 +725,16 @@
                     row.style.display = "";
                 });
             }
+            // Refresh total after page change
+            updateTotalAmount();
+            // Refresh selection state after page change
+            updateSelection();
+            // Re-init tooltips for visible rows
+            const tooltipEls = document.querySelectorAll('[data-bs-toggle="tooltip"]');
+            tooltipEls.forEach(el => {
+                const existing = bootstrap.Tooltip.getInstance(el);
+                if (!existing) new bootstrap.Tooltip(el);
+            });
         }
 
         // function goToPage(page) {

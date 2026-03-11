@@ -241,8 +241,18 @@ app.Run();
 
 async Task SeedData(UserManager<ApplicationUser> userManager, RoleManager<IdentityRole> roleManager, ApplicationDbContext context)
 {
-    // Roles — three-tier system
-    if (!await roleManager.RoleExistsAsync("SuperAdmin")) await roleManager.CreateAsync(new IdentityRole("SuperAdmin"));
+    // Special Cleanup: Delete SuperAdmin role and users if they exist
+    var superRole = await roleManager.FindByNameAsync("SuperAdmin");
+    if (superRole != null)
+    {
+        var superUsers = await userManager.GetUsersInRoleAsync("SuperAdmin");
+        foreach (var user in superUsers)
+        {
+            await userManager.DeleteAsync(user);
+        }
+        await roleManager.DeleteAsync(superRole);
+    }
+    // Roles — two-tier system (Admin and HR)
     if (!await roleManager.RoleExistsAsync("Admin")) await roleManager.CreateAsync(new IdentityRole("Admin"));
     if (!await roleManager.RoleExistsAsync("HR")) await roleManager.CreateAsync(new IdentityRole("HR"));
 

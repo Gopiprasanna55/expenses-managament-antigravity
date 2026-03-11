@@ -56,29 +56,29 @@
             <div class="">
             <div class="standard-table-container">
                 <div class="table-body-scroll-limit">
-                    <table class="standard-table">
+                    <table class="standard-table" style="table-layout: fixed; width: 100%;">
                     <thead>
                         <tr>
-                            <th class="text-center" style="width: 80px;">s.no</th>
-                            <th>Recharge Details</th>
-                            <th>Date</th>
-                            <th class="text-end">Amount</th>
-                            <th class="text-end" style="width: 120px;">Actions</th>
+                            <th class="text-center" style="width: 5%;">S.No</th>
+                            <th style="width: 55%;">Recharge Details</th>
+                            <th style="width: 15%;">Date</th>
+                            <th class="text-end" style="width: 15%;">Amount</th>
+                            <th class="text-end" style="width: 10%;">Actions</th>
                         </tr>
                     </thead>
                     <tbody>
                         @if(history != null) {
                             foreach(var item in history.Where(x => x.Type == "Recharge")) {
                                 <tr>
-                                    <td class="text-center fw-medium text-muted"></td>
+                                    <td class="text-center fw-medium text-muted sno-cell"></td>
                                     <td>
                                         <div class="d-flex align-items-center gap-3">
                                             
-                                            <div>
-                                                <div class="fw-bold text-dark">Wallet Top-up</div>
+                                            <div class="text-truncate w-100">
+                                                <div class="fw-bold text-dark text-truncate w-100" data-bs-toggle="tooltip" title="Wallet Top-up">Wallet Top-up</div>
                                                 @if (!string.IsNullOrEmpty(item.Description))
                                                 {
-                                                    <div class="text-muted small">@item.Description</div>
+                                                    <div class="text-muted small text-truncate w-100" data-bs-toggle="tooltip" title="@item.Description">@item.Description</div>
                                                 }
                                             </div>
                                         </div>

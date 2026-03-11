@@ -156,6 +156,7 @@ namespace ExpenseManager.Web.Controllers
             return Json(new { success = true });
         }
 
+        [Authorize(Roles = "Admin")]
         public async Task<IActionResult> ExportData()
         {
             var companyId = User.FindFirstValue("CompanyId") ?? string.Empty;

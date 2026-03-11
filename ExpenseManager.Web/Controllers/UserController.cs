@@ -6,7 +6,7 @@ using System.Security.Claims;
 
 namespace ExpenseManager.Web.Controllers
 {
-    [Authorize(Roles = "SuperAdmin,Admin,HR")]
+    [Authorize(Roles = "Admin")]
     public class UserController : Controller
     {
         private readonly IUserService _userService;
@@ -41,10 +41,10 @@ namespace ExpenseManager.Web.Controllers
             var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
             ViewData["CallerRole"] = callerRole;
 
-            // Enforce: Admin can only create HR, SuperAdmin can create SuperAdmin, Admin or HR
-            if (callerRole == "Admin" && model.Role != "HR")
+            // Admin can add Admin or HR
+            if (callerRole == "Admin" && model.Role != "HR" && model.Role != "Admin")
             {
-                ModelState.AddModelError("Role", "You can only add users with the HR role.");
+                ModelState.AddModelError("Role", "You can only add users with the Admin or HR role.");
                 return View(model);
             }
 
@@ -79,8 +79,8 @@ namespace ExpenseManager.Web.Controllers
             var user = await _userService.GetUserByIdAsync(id, companyId);
             if (user == null) return NotFound();
 
-            // Enforce: Admin cannot edit SuperAdmin or other Admins
-            if (callerRole == "Admin" && (user.Role == "SuperAdmin" || user.Role == "Admin"))
+            // Admin can edit Admin or HR
+            if (callerRole == "Admin" && user.Role == "SuperAdmin")
             {
                 return Forbid();
             }
@@ -105,10 +105,10 @@ namespace ExpenseManager.Web.Controllers
             var companyId = callerRole == "SuperAdmin" ? null : (User.FindFirstValue("CompanyId") ?? string.Empty);
             ViewData["CallerRole"] = callerRole;
 
-            // Enforce: Admin can only assign HR role, SuperAdmin can assign any role
-            if (callerRole == "Admin" && model.Role != "HR")
+            // Admin can assign Admin or HR
+            if (callerRole == "Admin" && model.Role != "HR" && model.Role != "Admin")
             {
-                ModelState.AddModelError("Role", "You can only assign the HR role.");
+                ModelState.AddModelError("Role", "You can only assign the Admin or HR role.");
                 return View(model);
             }
 
@@ -138,10 +138,10 @@ namespace ExpenseManager.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
  
-            // Admin cannot delete other Admins
-            if (callerRole == "Admin" && user.Role == "Admin")
+            // Admin can delete Admin or HR
+            if (callerRole == "Admin" && user.Role == "SuperAdmin")
             {
-                TempData["Error"] = "You do not have permission to delete Admin accounts.";
+                TempData["Error"] = "You do not have permission to delete this account.";
                 return RedirectToAction(nameof(Index));
             }
  
@@ -167,10 +167,10 @@ namespace ExpenseManager.Web.Controllers
                 return RedirectToAction(nameof(Index));
             }
  
-            // Admin cannot toggle other Admins
-            if (callerRole == "Admin" && user.Role == "Admin")
+            // Admin can toggle Admin or HR
+            if (callerRole == "Admin" && user.Role == "SuperAdmin")
             {
-                TempData["Error"] = "You do not have permission to modify Admin accounts.";
+                TempData["Error"] = "You do not have permission to modify this account.";
                 return RedirectToAction(nameof(Index));
             }
  

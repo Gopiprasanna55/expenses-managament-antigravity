@@ -1,4 +1,4 @@
-﻿@model ExpenseManager.Application.DTOs.DashboardDto
+@model ExpenseManager.Application.DTOs.DashboardDto
 @{
     ViewData["Title"] = "Dashboard";
 }
@@ -55,7 +55,7 @@
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="icon-box bg-light-green"><i class="bi bi-plus-circle-fill"></i></div>
                     <div>
-                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">CURRENT MONTH RECHARGE</small>
+                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">THIS MONTH RECHARGE</small>
                         <h6 class="fw-bold mb-0 text-success">₹@Model.CurrentMonthRecharge.ToString("N2")</h6>
                     </div>
                 </div>
@@ -63,29 +63,6 @@
                     <div class="progress-bar bg-success" role="progressbar" style="width: 100%"></div>
                 </div>
                 <div class="mt-2 small text-muted">Prev month remaining: <span class="fw-bold text-success">₹@Model.PreviousMonthRemainingBalance.ToString("N0")</span></div>
-            </div>
-        </div>
-
-        <!-- Amount Spent in Current Month -->
-        <div class="col-md-6 col-lg-4 col-xl">
-            @{
-                var spentPercent = Model.LifetimeRecharge > 0 ? (Model.CurrentMonthSpending / Model.LifetimeRecharge) * 100 : 0;
-            }
-            <div class="custom-card border-0 h-100 p-4 shadow-sm border-start border-4 border-danger">
-                <div class="d-flex align-items-center gap-3 mb-3">
-                    <div class="icon-box bg-light-red"><i class="bi bi-cart-dash-fill"></i></div>
-                    <div>
-                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">SPENT THIS MONTH</small>
-                        <h6 class="fw-bold mb-0 text-danger">₹@Model.CurrentMonthSpending.ToString("N2")</h6>
-                    </div>
-                </div>
-                <div class="progress progress-slim" style="height:5px">
-                    <div class="progress-bar bg-danger" role="progressbar" style="width: @(spentPercent > 100 ? 100 : spentPercent)%"></div>
-                </div>
-                <div class="mt-2 d-flex justify-content-between small">
-                    <span class="text-muted">Monthly Usage</span>
-                    <span class="fw-bold text-danger">@spentPercent.ToString("N1")%</span>
-                </div>
             </div>
         </div>
 
@@ -103,7 +80,7 @@
                 <div class="d-flex align-items-center gap-3 mb-3">
                     <div class="icon-box" style="background-color: @bgColor; color: @themeColor;"><i class="bi bi-shield-check"></i></div>
                     <div>
-                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">TOTAL REMAINING BALANCE</small>
+                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">REMAINING BALANCE</small>
                         <h6 class="fw-bold mb-0" style="color: @themeColor;">₹@remainingLimit.ToString("N2")</h6>
                     </div>
                 </div>
@@ -113,6 +90,29 @@
                 <div class="mt-2 d-flex justify-content-between small">
                     <span class="text-muted">Available Balance</span>
                     <span class="fw-bold" style="color: @themeColor;">@remainingPercent.ToString("N1")%</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Amount Spent in Current Month -->
+        <div class="col-md-6 col-lg-4 col-xl">
+            @{
+                var spentPercent = Model.LifetimeRecharge > 0 ? (Model.CurrentMonthSpending / Model.LifetimeRecharge) * 100 : 0;
+            }
+            <div class="custom-card border-0 h-100 p-4 shadow-sm border-start border-4 border-danger">
+                <div class="d-flex align-items-center gap-3 mb-3">
+                    <div class="icon-box bg-light-red"><i class="bi bi-cart-dash-fill"></i></div>
+                    <div>
+                        <small class="text-muted fw-bold d-block" style="font-size: 0.7rem;">EXPENSE THIS MONTH</small>
+                        <h6 class="fw-bold mb-0 text-danger">₹@Model.CurrentMonthSpending.ToString("N2")</h6>
+                    </div>
+                </div>
+                <div class="progress progress-slim" style="height:5px">
+                    <div class="progress-bar bg-danger" role="progressbar" style="width: @(spentPercent > 100 ? 100 : spentPercent)%"></div>
+                </div>
+                <div class="mt-2 d-flex justify-content-between small">
+                    <span class="text-muted">Monthly Usage</span>
+                    <span class="fw-bold text-danger">@spentPercent.ToString("N1")%</span>
                 </div>
             </div>
         </div>
@@ -130,7 +130,7 @@
                 <div class="progress progress-slim" style="height:5px">
                     <div class="progress-bar" role="progressbar" style="width: 100%; background-color: #f59e0b;"></div>
                 </div>
-                <div class="mt-2 small text-muted text-truncate">For @(new DateTime(Model.SelectedYear, Model.SelectedMonth, 1).ToString("MMMM"))</div>
+                <div class="mt-2 small text-muted text-truncate">For @(new DateTime(Model.SelectedYear, Model.SelectedMonth, 1).ToString("MMMM yyyy"))</div>
             </div>
         </div>
     </div>
@@ -193,7 +193,7 @@
                         <thead>
                             <tr>
                               
-                                <th>Expense Details</th>
+                                <th>Expense Detail</th>
                                 <th>Date</th>
                                 <th>Category</th>
                                 <th>Payment Method</th>

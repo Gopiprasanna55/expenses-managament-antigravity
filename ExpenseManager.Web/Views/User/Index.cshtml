@@ -23,24 +23,15 @@
 
     <div class="standard-table-container">
         <div class="table-body-scroll-limit">
-            <table class="standard-table ">
+            <table class="standard-table" style="table-layout: fixed; width: 100%;">
             <thead>
                 <tr>
-                    <th>User Information</th>
-                    <th>Email Address</th>
-                    <th>Account Role</th>
-
-                    <th>Created On</th>
-                     @if (callerRole != "HR")
-                    {
-                        <th class="text-center">Account Status</th>
-                    }else{
-                        <th class="text-center">Account Status</th>
-                    }
-                    @if (callerRole != "HR")
-                    {
-                        <th class="text-center" style="width: 150px;">Actions</th>
-                    }
+                    <th style="width: 35%;">User Information</th>
+                    <th style="width: 25%;">Email Address</th>
+                    <th style="width: 12%;">Account Role</th>
+                    <th style="width: 10%;">Created On</th>
+                    <th style="width: 10%;" class="text-center">Account Status</th>
+                    <th style="width: 8%;" class="text-center">Actions</th>
                 </tr>
             </thead>
             <tbody>
@@ -49,15 +40,17 @@
                         <tr>
                             <td>
                                 <div class="d-flex align-items-center gap-3">
-                                    <div class="avatar-teal">
+                                    <div class="avatar-teal" style="flex-shrink: 0;">
                                         @string.Concat(user.FullName.Split(' ', StringSplitOptions.RemoveEmptyEntries).Take(2).Select(n => n[0])).ToUpper()
                                     </div>
-                                    <span class="fw-bold text-dark">@user.FullName</span>
+                                    <span class="fw-bold text-dark text-truncate d-block" data-bs-toggle="tooltip" title="@user.FullName">@user.FullName</span>
                                 </div>
                             </td>
-                            <td>@user.Email</td>
                             <td>
-                                <span class="badge-pill-standard @(user.Role == "SuperAdmin" ? "badge-pending" : "badge-active")">
+                                <span class="text-truncate d-block w-100" data-bs-toggle="tooltip" title="@user.Email">@user.Email</span>
+                            </td>
+                            <td>
+                                <span class="badge-pill-standard badge-active">
                                     <span class="dot"></span>
                                     @user.Role
                                 </span>
@@ -69,73 +62,58 @@
                                     @(user.IsActive ? "Active" : "Inactive")
                                 </span>
                             </td>
-                            @if (callerRole != "HR")
-                            {
-                                <td class="text-end">
-                                    <div class="d-flex justify-content-end gap-2">
-                                        @if (callerRole == "SuperAdmin" || (callerRole == "Admin" && user.Role == "HR"))
-                                        {
-                                            var isCurrentUser = User.FindFirstValue(ClaimTypes.NameIdentifier) == user.Id || User.Identity?.Name == user.Email;
-                                            
-                                            @if (!isCurrentUser)
-                                            {
-                                                <button type="button" class="btn-icon-circle" title="Edit" 
-                                                        onclick="editUser({ 
-                                                            id: '@user.Id', 
-                                                            fullName: '@HttpUtility.JavaScriptStringEncode(user.FullName)', 
-                                                            email: '@HttpUtility.JavaScriptStringEncode(user.Email)', 
-                                                            role: '@user.Role', 
-                                                            isActive: @(user.IsActive.ToString().ToLower()) 
-                                                        })">
-                                                    <i class="bi bi-pencil"></i>
-                                                </button>
-                                            
-                                                <div class="form-check form-switch d-inline-block align-middle me-2">
-                                                    <input class="form-check-input custom-switch cursor-pointer" type="checkbox" 
-                                                           @(user.IsActive ? "checked" : "") 
-                                                           title="@(user.IsActive ? "Deactivate" : "Activate")"
-                                                           onchange="handleToggleStatus('@user.Id', this.checked, '@HttpUtility.JavaScriptStringEncode(user.FullName)')">
-                                                </div>
+                            <td class="text-end">
+                                <div class="d-flex justify-content-end gap-2">
+                                    @if (callerRole == "Admin" && (user.Role == "HR" || user.Role == "Admin"))
+                                    {
+                                        var isCurrentUser = User.FindFirstValue(ClaimTypes.NameIdentifier) == user.Id || User.Identity?.Name == user.Email;
 
-                                                <button type="button" class="btn-icon-circle text-danger" title="Delete" 
-                                                        onclick="confirmDeleteUser('@user.Id', '@HttpUtility.JavaScriptStringEncode(user.FullName)')">
-                                                    <i class="bi bi-trash"></i>
-                                                </button>
-                                            }
-
-                                            @if (callerRole == "SuperAdmin" && !isCurrentUser)
-                                            {
-                                                <div class="dropdown">
-                                                    <button type="button" class="btn-icon-circle" data-bs-toggle="dropdown">
-                                                        <i class="bi bi-three-dots-vertical"></i>
-                                                    </button>
-                                                    <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm p-1" style="border-radius: 8px;">
-                                                        <li>
-                                                            <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="SuperAdmin" method="post">
-                                                                <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "SuperAdmin" ? "disabled" : "")">Make SuperAdmin</button>
-                                                            </form>
-                                                        </li>
-                                                        <li>
-                                                            <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="Admin" method="post">
-                                                                <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "Admin" ? "disabled" : "")">Make Admin</button>
-                                                            </form>
-                                                        </li>
-                                                        <li>
-                                                            <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="HR" method="post">
-                                                                <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "HR" ? "disabled" : "")">Make HR</button>
-                                                            </form>
-                                                        </li>
-                                                    </ul>
-                                                </div>
-                                            }
-                                        }
-                                        else
+                                        @if (!isCurrentUser)
                                         {
-                                            <span class="text-muted small"></span>
+                                            <button type="button" class="btn-icon-circle" title="Edit"
+                                                    onclick="editUser({
+                                                             id: '@user.Id',
+                                                             fullName: '@HttpUtility.JavaScriptStringEncode(user.FullName)',
+                                                             email: '@HttpUtility.JavaScriptStringEncode(user.Email)',
+                                                             role: '@user.Role',
+                                                             isActive: @(user.IsActive.ToString().ToLower())
+                                                         })">
+                                                <i class="bi bi-pencil"></i>
+                                            </button>
+
+                                            <div class="form-check form-switch d-inline-block align-middle me-2">
+                                                <input class="form-check-input custom-switch cursor-pointer" type="checkbox"
+                                                       @(user.IsActive ? "checked" : "")
+                                                       title="@(user.IsActive ? "Deactivate" : "Activate")"
+                                                       onchange="handleToggleStatus('@user.Id', this.checked, '@HttpUtility.JavaScriptStringEncode(user.FullName)')">
+                                            </div>
+
+                                            <button type="button" class="btn-icon-circle text-danger" title="Delete"
+                                                    onclick="confirmDeleteUser('@user.Id', '@HttpUtility.JavaScriptStringEncode(user.FullName)')">
+                                                <i class="bi bi-trash"></i>
+                                            </button>
+
+                                            <div class="dropdown">
+                                                <button type="button" class="btn-icon-circle" data-bs-toggle="dropdown">
+                                                    <i class="bi bi-three-dots-vertical"></i>
+                                                </button>
+                                                <ul class="dropdown-menu dropdown-menu-end border-0 shadow-sm p-1" style="border-radius: 8px;">
+                                                    <li>
+                                                        <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="Admin" method="post">
+                                                            <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "Admin" ? "disabled" : "")">Make Admin</button>
+                                                        </form>
+                                                    </li>
+                                                    <li>
+                                                        <form asp-action="AssignRole" asp-route-id="@user.Id" asp-route-role="HR" method="post">
+                                                            <button type="submit" class="dropdown-item rounded-2 small @(user.Role == "HR" ? "disabled" : "")">Make HR</button>
+                                                        </form>
+                                                    </li>
+                                                </ul>
+                                            </div>
                                         }
-                                    </div>
-                                </td>
-                            }
+                                    }
+                                </div>
+                            </td>
                         </tr>
                     }
                 </tbody>
@@ -184,16 +162,8 @@
                         <div class="col-md-6">
                             <label class="form-label small fw-bold text-muted">ROLE</label>
                             <select name="Role" id="editRole" class="form-select form-control-custom">
-                                @if (callerRole == "SuperAdmin")
-                                {
-                                    <option value="SuperAdmin">SuperAdmin</option>
-                                    <option value="Admin">Admin</option>
-                                    <option value="HR">HR</option>
-                                }
-                                else
-                                {
-                                    <option value="HR">HR</option>
-                                }
+                                <option value="Admin">Admin</option>
+                                <option value="HR">HR</option>
                             </select>
                         </div>
                         <div class="col-md-6 d-flex align-items-end">
